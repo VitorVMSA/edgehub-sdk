@@ -49,6 +49,13 @@ ehc_status_t ehc_tel_set_bool_in(const char *parent, const char *name, int value
 ehc_status_t ehc_tel_set_num_at(const char *path, double value);
 ehc_status_t ehc_tel_set_str_at(const char *path, const char *value);
 ehc_status_t ehc_tel_set_bool_at(const char *path, int value);
+/** Enfileira a leitura actual. `ts_iso` NULL usa `now_ms` do port. Não faz flush. */
+ehc_status_t ehc_tel_enqueue(const char *ts_iso);
+/** Envia a fila se ACTIVE; caso contrário OK e a fila permanece. */
+ehc_status_t ehc_tel_flush(void);
+/** Leituras na fila do device SDK (0 se o client ainda não arrancou). */
+uint8_t ehc_tel_queued(void);
+/** Atalho: `ehc_tel_enqueue(NULL)` + `ehc_tel_flush()`. */
 ehc_status_t ehc_tel_publish(void);
 
 #ifdef __cplusplus

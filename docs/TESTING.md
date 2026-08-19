@@ -19,6 +19,7 @@ Em Unix: `scripts/test_host.sh`.
 | `test_readiness` | sem URL/UID não há HTTP; `EHC_KEY_REQUIRED`; log throttled; MINIMAL→FULL |
 | `test_checkin` | keys const/fn/asset no corpo |
 | `test_telemetry` | JSON aninhado, omitir objecto vazio, getter vs push, profundidade, pool de strings, `%.15g` |
+| `test_telemetry_batch` | `enqueue`/`flush`/`queued`; lote `readings[]`; tick não drena em `telemetry_manual_only`; `publish` imediato |
 | `test_commands` | args tipados, desconhecido, `DEFER_AFTER_ACK`, rejeitar `device.force_checkin` |
 | `test_assets` | versão só após apply OK; falha de storage |
 | `test_offline` | fila até ACTIVE; 401 → FULL (reprovision) |

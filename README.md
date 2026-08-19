@@ -1,13 +1,13 @@
 # EdgeHub Client SDK
 
-Camada C99 portável por cima do [`edgehub-device-sdk`](https://github.com) **≥ v1.2.0** (ABI 2). Trata sozinha de:
+Camada C99 portável por cima do [`edgehub-device-sdk`](https://github.com) **≥ v1.2.1** (ABI 2). Trata sozinha de:
 
 - **Prontidão** — não envia nada à rede sem `base_url`, `device_uid` e keys obrigatórias
 - **Check-in** mínimo vs completo (`group_key` + `product_code`)
-- **Telemetria** — tabela estática, JSON aninhado, push e getters
+- **Telemetria** — tabela estática, JSON aninhado, push, getters, fila (`enqueue`/`flush`) e lote `readings[]`
 - **Comandos** — dispatch por `commandKey`, argumentos tipados, `DEFER_AFTER_ACK`
 
-Versão: **0.1.0**. Sem `malloc` nesta camada (o batch de 64 KiB do device SDK continua opt-in).
+Versão: **0.2.0**. Sem `malloc` nesta camada (o batch de 64 KiB do device SDK continua opt-in).
 
 ## Layout
 

@@ -9,7 +9,7 @@ if (-not $Dest) { $Dest = Join-Path $root "third_party\edgehub-device-sdk" }
 if (-not $Source) { $Source = Join-Path (Split-Path -Parent $root) "edgehub-device-sdk" }
 
 if (-not (Test-Path (Join-Path $Source "CMakeLists.txt"))) {
-  Write-Error "device SDK not found at $Source (expected tag >= v1.2.0)"
+  Write-Error "device SDK not found at $Source (expected tag >= v1.2.1)"
 }
 
 New-Item -ItemType Directory -Force -Path (Split-Path $Dest) | Out-Null

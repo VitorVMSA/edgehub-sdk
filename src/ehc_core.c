@@ -224,7 +224,9 @@ ehc_status_t ehc_ensure_eh_client(void)
   cfg.enable_identity_credential_issue = g_ehc.user.enable_identity_credential_issue ? 1 : 0;
   cfg.checkin_interval_ms = (uint32_t)EHC_CHECKIN_INTERVAL_MS;
   cfg.telemetry_interval_ms = (uint32_t)EHC_TELEMETRY_INTERVAL_MS;
-  cfg.telemetry_batch_max = (uint8_t)EHC_TELEMETRY_BATCH_MAX;
+  cfg.telemetry_batch_max = g_ehc.user.telemetry_batch_max
+    ? g_ehc.user.telemetry_batch_max
+    : (uint8_t)EHC_TELEMETRY_BATCH_MAX;
 
   cb.http_post_ex = ehc_bridge_http;
   cb.store_read = g_ehc.port.storage_read ? ehc_bridge_store_read : NULL;
@@ -365,7 +367,9 @@ ehc_status_t ehc_tick(void)
   }
   ehc_persist_secret_if_changed();
   ehc_refresh_readiness();
-  if (g_ehc.readiness == EHC_ACTIVE && eh_client_telemetry_queue_count(&g_ehc.eh) > 0) {
+  if (g_ehc.readiness == EHC_ACTIVE &&
+      !g_ehc.user.telemetry_manual_only &&
+      eh_client_telemetry_queue_count(&g_ehc.eh) > 0) {
     (void)eh_client_flush_telemetry(&g_ehc.eh, now);
   }
   ehc_run_deferred();
@@ -394,10 +398,51 @@ ehc_status_t ehc_force_checkin(void)
   return rc;
 }
 
-ehc_status_t ehc_tel_publish(void)
+static ehc_status_t tel_enqueue_locked(const char *ts_iso)
 {
   ehc_status_t rc;
   uint64_t now;
+  ehc_refresh_readiness();
+  if (g_ehc.readiness == EHC_UNCONFIGURED) {
+    return EHC_ENOTREADY;
+  }
+  rc = ehc_ensure_eh_client();
+  if (rc != EHC_OK) {
+    return rc;
+  }
+  now = ehc_now();
+  if (eh_client_enqueue_reading(&g_ehc.eh, ts_iso, now) != EH_OK) {
+    return EHC_EIO;
+  }
+  return EHC_OK;
+}
+
+static ehc_status_t tel_flush_locked(void)
+{
+  ehc_status_t rc = EHC_OK;
+  ehc_refresh_readiness();
+  if (g_ehc.readiness == EHC_ACTIVE && g_ehc.eh_inited) {
+    rc = (eh_client_flush_telemetry(&g_ehc.eh, ehc_now()) == EH_OK) ? EHC_OK : EHC_EIO;
+  }
+  ehc_run_deferred();
+  return rc;
+}
+
+ehc_status_t ehc_tel_enqueue(const char *ts_iso)
+{
+  ehc_status_t rc;
+  if (!g_ehc.used) {
+    return EHC_EINVAL;
+  }
+  ehc_lock();
+  rc = tel_enqueue_locked(ts_iso);
+  ehc_unlock();
+  return rc;
+}
+
+ehc_status_t ehc_tel_flush(void)
+{
+  ehc_status_t rc;
   if (!g_ehc.used) {
     return EHC_EINVAL;
   }
@@ -412,18 +457,36 @@ ehc_status_t ehc_tel_publish(void)
     ehc_unlock();
     return rc;
   }
-  now = ehc_now();
-  if (eh_client_enqueue_reading(&g_ehc.eh, NULL, now) != EH_OK) {
-    ehc_unlock();
-    return EHC_EIO;
+  rc = tel_flush_locked();
+  ehc_unlock();
+  return rc;
+}
+
+uint8_t ehc_tel_queued(void)
+{
+  uint8_t n = 0;
+  if (!g_ehc.used) {
+    return 0;
   }
-  ehc_refresh_readiness();
-  if (g_ehc.readiness == EHC_ACTIVE) {
-    rc = (eh_client_flush_telemetry(&g_ehc.eh, now) == EH_OK) ? EHC_OK : EHC_EIO;
-  } else {
-    rc = EHC_OK;
+  ehc_lock();
+  if (g_ehc.eh_inited) {
+    n = eh_client_telemetry_queue_count(&g_ehc.eh);
   }
-  ehc_run_deferred();
+  ehc_unlock();
+  return n;
+}
+
+ehc_status_t ehc_tel_publish(void)
+{
+  ehc_status_t rc;
+  if (!g_ehc.used) {
+    return EHC_EINVAL;
+  }
+  ehc_lock();
+  rc = tel_enqueue_locked(NULL);
+  if (rc == EHC_OK) {
+    rc = tel_flush_locked();
+  }
   ehc_unlock();
   return rc;
 }

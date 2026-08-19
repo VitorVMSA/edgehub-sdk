@@ -31,6 +31,9 @@ static void test_queue_until_active(void)
   TEST_ASSERT_EQUAL(EHC_ACTIVE, ehc_get_readiness());
   ehc_host_clear_captures();
   TEST_ASSERT_EQUAL(EHC_OK, ehc_tick());
+  TEST_ASSERT_NULL(ehc_host_find_url("/device/telemetry"));
+  TEST_ASSERT_EQUAL(1, ehc_tel_queued());
+  TEST_ASSERT_EQUAL(EHC_OK, ehc_tel_flush());
   TEST_ASSERT_NOT_NULL(ehc_host_find_url("/device/telemetry"));
 }
 

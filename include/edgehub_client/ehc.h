@@ -32,6 +32,8 @@ typedef struct {
     void *ctx);
   void *user_ctx;
   uint8_t telemetry_manual_only;
+  /** 0 = `EHC_TELEMETRY_BATCH_MAX`. Valor > 1 envia `readings[]`. */
+  uint8_t telemetry_batch_max;
   uint8_t enable_identity_credential_issue;
 } ehc_user_t;
 
@@ -46,7 +48,7 @@ ehc_readiness_t ehc_get_readiness(void);
 const char *ehc_readiness_name(ehc_readiness_t r);
 const char *ehc_not_ready_reason(void);
 
-#define EHC_LIB_VERSION "0.1.0"
+#define EHC_LIB_VERSION "0.2.0"
 
 #ifdef __cplusplus
 }

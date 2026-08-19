@@ -2,6 +2,8 @@
 
 Copie `user_template/` para o firmware. Não ligue esses `.c` à biblioteca — cada binário traz as suas tabelas.
 
+Requer `edgehub-device-sdk` ≥ **1.2.1** (ABI 2). Client SDK **0.2.0**.
+
 ## 1. Config compile-time
 
 `ehc_user_config.h` define limites (`EHC_MAX_NESTING_DEPTH`, pool de strings, intervalos). A lib usa `include/edgehub_client/ehc_config_defaults.h` quando o header do utilizador não entra no compile da `.a`.
@@ -14,6 +16,8 @@ Para aplicar limites custom na lib:
 
 e o include path do template. `ehc_init` recusa tabelas que excedam os limites (`EHC_ECONFIG`) e loga o elemento.
 
+Payload JSON grande (EcoCircuito ~4 KiB): compile as **fontes** do device SDK com `-DEH_MAX_TELEMETRY_QUEUE_VALUES=4096` e `-DEH_MAX_TELEMETRY_QUEUE=8`. O `.a` pré-compilado com o default 768 **não** serve. `EHC_OBJECT_SCRATCH_BYTES` no template (256) também tem de acompanhar o JSON real — isso fica no glue do firmware.
+
 ## 2. Identidade
 
 ```c
@@ -25,7 +29,7 @@ u.product_code= (ehc_identity_source_t)EHC_IDENT_FN(read_product);
 
 Sem `base_url`+`device_uid` (e keys `EHC_KEY_REQUIRED`) o tick devolve `EHC_ENOTREADY` e **não** chama `eh_client_init`.
 
-Com `group_key`+`product_code` o check-in passa a corpo completo (`eh_client_set_group_product`). Telemetria só é enviada em `ACTIVE` (provisioning `active` + segredo HMAC). Antes disso `ehc_tel_publish` só enfileira.
+Com `group_key`+`product_code` o check-in passa a corpo completo (`eh_client_set_group_product`). Telemetria só é enviada em `ACTIVE` (provisioning `active` + segredo HMAC). Antes disso `ehc_tel_enqueue` / `ehc_tel_publish` só enfileiram; `ehc_tel_flush` não POST.
 
 ## 3. Telemetria
 
@@ -37,6 +41,28 @@ EHC_METRIC_NUM_GET("uptimeSec", app_read_uptime),
 ```
 
 Push: `ehc_tel_set_num` / `_in` / `_at`. Getter ganha sobre o cache de push. Objecto sem filhos preenchidos é omitido. Nomes de objecto únicos em toda a tabela.
+
+### Sensores vivos
+
+`ehc_tel_publish()` = `ehc_tel_enqueue(NULL)` + `ehc_tel_flush()` (um POST por pacote; `ts` = relógio do port). Com `telemetry_manual_only=0`, `ehc_tick()` também drena a fila.
+
+### Replay histórico (lote)
+
+Cada leitura vem de um registo (não de getters vivos). Preencha a cache a partir do rec, enfileire com o **timestamp do registo**, e faça um flush:
+
+```c
+u.telemetry_manual_only = 1;
+u.telemetry_batch_max = 8; /* 0 = EHC_TELEMETRY_BATCH_MAX (default 1 = corpo legado) */
+
+for (/* cada rec_id pendente */) {
+  /* preencher cache a partir do telemetry_record_t */
+  ehc_tel_set_*(...);
+  ehc_tel_enqueue(iso8601_utc_de(rec->timestamp_s)); /* não now */
+}
+ehc_tel_flush(); /* um POST readings[] se batch_max > 1 */
+```
+
+`ehc_tick()` **não** envia telemetria quando `telemetry_manual_only=1`. `ehc_tel_queued()` devolve o tamanho da fila.
 
 ## 4. Check-in keys e assets
 
@@ -66,4 +92,4 @@ for (;;) {
 }
 ```
 
-`ehc_tel_publish()` força enqueue+flush (flush só em ACTIVE). `now_ms` vem do port.
+`now_ms` vem do port. Replay histórico chama `ehc_tel_enqueue` / `ehc_tel_flush` no próprio loop; o tick fica para check-in e comandos.
