@@ -1,0 +1,80 @@
+#ifndef EHC_CONFIG_DEFAULTS_H
+#define EHC_CONFIG_DEFAULTS_H
+
+#ifdef EHC_USER_CONFIG_HEADER
+#include EHC_USER_CONFIG_HEADER
+#endif
+
+#ifndef EHC_MAX_NESTING_DEPTH
+#define EHC_MAX_NESTING_DEPTH 2
+#endif
+
+#ifndef EHC_OBJECT_SCRATCH_BYTES
+#define EHC_OBJECT_SCRATCH_BYTES 256
+#endif
+
+#ifndef EHC_MAX_METRICS
+#define EHC_MAX_METRICS 64
+#endif
+
+#ifndef EHC_TEL_STR_SLOTS
+#define EHC_TEL_STR_SLOTS 8
+#endif
+
+#ifndef EHC_TEL_STR_MAX
+#define EHC_TEL_STR_MAX 32
+#endif
+
+#ifndef EHC_MAX_COMMANDS_TABLE
+#define EHC_MAX_COMMANDS_TABLE 32
+#endif
+
+#ifndef EHC_CMD_MESSAGE_MAX
+#define EHC_CMD_MESSAGE_MAX 128
+#endif
+
+#ifndef EHC_ARGS_MAX_DEPTH
+#define EHC_ARGS_MAX_DEPTH 2
+#endif
+
+#ifndef EHC_ARGS_MAX_KEYS
+#define EHC_ARGS_MAX_KEYS 24
+#endif
+
+#ifndef EHC_MAX_CHECKIN_KEYS
+#define EHC_MAX_CHECKIN_KEYS 24
+#endif
+
+#ifndef EHC_CHECKIN_INTERVAL_MS
+#define EHC_CHECKIN_INTERVAL_MS 43200000UL
+#endif
+
+#ifndef EHC_TELEMETRY_INTERVAL_MS
+#define EHC_TELEMETRY_INTERVAL_MS 10000UL
+#endif
+
+#ifndef EHC_TELEMETRY_BATCH_MAX
+#define EHC_TELEMETRY_BATCH_MAX 1
+#endif
+
+#ifndef EHC_NOT_READY_LOG_MS
+#define EHC_NOT_READY_LOG_MS 60000UL
+#endif
+
+#ifndef EHC_ASSET_VERSION_MAX
+#define EHC_ASSET_VERSION_MAX 64
+#endif
+
+#ifndef EHC_IDENT_MAX
+#define EHC_IDENT_MAX 192
+#endif
+
+#define EHC_STATIC_ASSERT(cond, name) typedef char ehc_static_assert_##name[(cond) ? 1 : -1]
+
+EHC_STATIC_ASSERT(EHC_MAX_NESTING_DEPTH >= 1, nesting_depth);
+EHC_STATIC_ASSERT(EHC_OBJECT_SCRATCH_BYTES >= 64, scratch_bytes);
+EHC_STATIC_ASSERT(EHC_MAX_METRICS >= 1, max_metrics);
+EHC_STATIC_ASSERT(EHC_TEL_STR_MAX >= 2, str_max);
+EHC_STATIC_ASSERT(EHC_CMD_MESSAGE_MAX >= 8, cmd_msg);
+
+#endif

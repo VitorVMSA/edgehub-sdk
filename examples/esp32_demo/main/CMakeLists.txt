@@ -1,0 +1,14 @@
+idf_component_register(
+    SRCS
+        "main.c"
+        "ed25519_random_esp32.c"
+        "${CMAKE_CURRENT_LIST_DIR}/../../user_template/ehc_user_telemetry.c"
+        "${CMAKE_CURRENT_LIST_DIR}/../../user_template/ehc_user_commands.c"
+        "${CMAKE_CURRENT_LIST_DIR}/../../user_template/ehc_user_checkin.c"
+    INCLUDE_DIRS
+        "."
+        "${CMAKE_CURRENT_LIST_DIR}/../../user_template"
+    REQUIRES
+        edgehub_client
+        nvs_flash
+)

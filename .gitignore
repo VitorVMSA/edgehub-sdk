@@ -1,0 +1,9 @@
+build/
+.vs/
+CMakeUserPresets.json
+CMakeCache.txt
+*.user
+.idea/
+.vscode/
+out/
+```
