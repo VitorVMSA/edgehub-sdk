@@ -227,6 +227,7 @@ ehc_status_t ehc_ensure_eh_client(void)
   cfg.telemetry_batch_max = g_ehc.user.telemetry_batch_max
     ? g_ehc.user.telemetry_batch_max
     : (uint8_t)EHC_TELEMETRY_BATCH_MAX;
+  cfg.telemetry_queue_persist = 0;
 
   cb.http_post_ex = ehc_bridge_http;
   cb.store_read = g_ehc.port.storage_read ? ehc_bridge_store_read : NULL;
@@ -474,6 +475,18 @@ uint8_t ehc_tel_queued(void)
   }
   ehc_unlock();
   return n;
+}
+
+void ehc_tel_queue_clear(void)
+{
+  if (!g_ehc.used) {
+    return;
+  }
+  ehc_lock();
+  if (g_ehc.eh_inited) {
+    eh_client_telemetry_queue_clear(&g_ehc.eh);
+  }
+  ehc_unlock();
 }
 
 ehc_status_t ehc_tel_publish(void)

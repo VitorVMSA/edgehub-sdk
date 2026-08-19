@@ -10,6 +10,7 @@
 #define EHC_STORE_SECRET "ehc.hmac.secret"
 #define EHC_STORE_SECRET_PREV "ehc.hmac.secret.prev"
 #define EHC_ASSET_PREFIX "ehc.asset."
+#define EHC_DEV_TEL_QUEUE_KEY "eh.tel.q"
 
 typedef struct {
   uint8_t filled;

@@ -55,6 +55,10 @@ ehc_status_t ehc_tel_enqueue(const char *ts_iso);
 ehc_status_t ehc_tel_flush(void);
 /** Leituras na fila do device SDK (0 se o client ainda não arrancou). */
 uint8_t ehc_tel_queued(void);
+/** `filled=0` e pool de strings vazio. Getters intactos. No-op sem `ehc_init`. */
+void ehc_tel_reset(void);
+/** Esvazia a fila RAM. No-op se o client EH ainda não arrancou. */
+void ehc_tel_queue_clear(void);
 /** Atalho: `ehc_tel_enqueue(NULL)` + `ehc_tel_flush()`. */
 ehc_status_t ehc_tel_publish(void);
 

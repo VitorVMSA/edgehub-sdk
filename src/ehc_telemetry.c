@@ -391,3 +391,19 @@ int ehc_telemetry_collect(eh_values_writer_t *writer)
 {
   return emit_children(writer, NULL, 0) ? 1 : 0;
 }
+
+void ehc_tel_reset(void)
+{
+  size_t i;
+  if (!g_ehc.used) {
+    return;
+  }
+  ehc_lock();
+  for (i = 0; i < g_ehc.user.metric_count; i++) {
+    g_ehc.metrics[i].filled = 0;
+  }
+  for (i = 0; i < EHC_TEL_STR_SLOTS; i++) {
+    g_ehc.str_pool[i][0] = '\0';
+  }
+  ehc_unlock();
+}

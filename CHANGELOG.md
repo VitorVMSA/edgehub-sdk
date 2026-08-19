@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1 — 2026-08-19
+
+- `ehc_tel_reset()`: cache `filled=0` e pool de strings vazio (campos condicionais não contaminam a leitura seguinte). Getters intactos. Sem auto-reset no `enqueue`.
+- `ehc_tel_queue_clear()`: esvazia a fila RAM após falha de flush (o store da aplicação reenvia os mesmos `rec_id`).
+- Fila do client **só em RAM**: `telemetry_queue_persist = 0` no init; o bridge ignora `eh.tel.q`. HMAC (`ehc.hmac.secret`) e assets (`ehc.asset.*`) continuam no port.
+- Requer **edgehub-device-sdk ≥ 1.2.2**. `ehc_tel_flush` continua a devolver só `ehc_status_t`.
+
 ## 0.2.0 — 2026-08-19
 
 - `ehc_tel_enqueue(ts_iso)` / `ehc_tel_flush()` / `ehc_tel_queued()`: fila sem flush imediato e timestamp explícito (replay histórico). `ehc_tel_publish()` permanece enqueue(NULL)+flush.

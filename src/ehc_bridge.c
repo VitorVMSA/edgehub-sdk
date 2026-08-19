@@ -17,6 +17,14 @@ int ehc_bridge_http(
 int ehc_bridge_store_read(void *user_ctx, const char *key, uint8_t *buf, size_t cap, size_t *len)
 {
   (void)user_ctx;
+  (void)buf;
+  (void)cap;
+  if (key && strcmp(key, EHC_DEV_TEL_QUEUE_KEY) == 0) {
+    if (len) {
+      *len = 0;
+    }
+    return 0;
+  }
   if (!g_ehc.port.storage_read) {
     return 0;
   }
@@ -26,6 +34,9 @@ int ehc_bridge_store_read(void *user_ctx, const char *key, uint8_t *buf, size_t 
 int ehc_bridge_store_write(void *user_ctx, const char *key, const uint8_t *buf, size_t len)
 {
   (void)user_ctx;
+  if (key && strcmp(key, EHC_DEV_TEL_QUEUE_KEY) == 0) {
+    return 1;
+  }
   if (!g_ehc.port.storage_write) {
     return 0;
   }

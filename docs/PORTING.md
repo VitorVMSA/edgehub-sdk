@@ -5,7 +5,7 @@ O HAL está em `include/edgehub_client/ehc_port.h`. Implemente:
 | Callback | Notas |
 |---|---|
 | `http_post` | **nonzero = transporte OK**, mesmo em HTTP 4xx/5xx. Preencha `http_status` e, em 429, `retry_after_sec`. Use esta variante (`http_post_ex` no device SDK). |
-| `storage_read` / `storage_write` | blobs opacos. Segredo HMAC em `ehc.hmac.secret` / `.prev`. Versões de asset em `ehc.asset.<key>`. |
+| `storage_read` / `storage_write` | blobs opacos. Segredo HMAC em `ehc.hmac.secret` / `.prev`. Versões de asset em `ehc.asset.<key>`. **Não** mapear `eh.tel.q` — a fila do client é só RAM. |
 | `now_ms` | relógio monotónico ou wall-clock em milissegundos. |
 | `log` | opcional |
 | `lock` / `unlock` | opcional; obrigatório se `ehc_tick` e HTTP/storage puderem correr em threads distintas |
@@ -20,7 +20,7 @@ OpenSSL BIO com `SO_RCVTIMEO`/`SO_SNDTIMEO` (default 12 s). Storage = um ficheir
 
 **Regra dura:** I/O de NVS só em tasks com stack em **RAM interna**. Se a task do client corre em PSRAM, compile com `-DEHC_PORT_ESP32_STORAGE_WORKER=1` — o port despacha read/write para um worker interno.
 
-Compile as **fontes** do device SDK **1.2.1+** (já sem `vendor/cjson` nos `INCLUDE_DIRS`). O `.a` prebuilt com `EH_MAX_TELEMETRY_QUEUE_VALUES=768` **não** serve para payloads maiores — use `-DEH_MAX_TELEMETRY_QUEUE_VALUES=4096` (e `-DEH_MAX_TELEMETRY_QUEUE=8`) no mesmo compile que o header.
+Compile as **fontes** do device SDK **1.2.2+** (já sem `vendor/cjson` nos `INCLUDE_DIRS`). O `.a` prebuilt com `EH_MAX_TELEMETRY_QUEUE_VALUES=768` **não** serve para payloads maiores — use `-DEH_MAX_TELEMETRY_QUEUE_VALUES=4096` (e `-DEH_MAX_TELEMETRY_QUEUE=8`) no mesmo compile que o header. `EH_MAX_BATCH_PAYLOAD` permanece 64 KiB.
 
 ## Storage legado (EcoCircuito já provisionado)
 
@@ -35,6 +35,8 @@ O conteúdo é string plana nos dois lados. O glue do firmware implementa `stora
 | `ehc.asset.<key>` | namespace `EdgeHubAssetVer`, chaves `eh_v_*` via `edgehub_asset_version_get/set` |
 
 Identidade (`base_url`, UID, group, product, PKCS#8) → `EHC_IDENT_FN` sobre o `config_manager`, **não** storage do client.
+
+Glue NVS legado **não** precisa de mapear `eh.tel.q`. O client não persiste a fila de telemetria.
 
 I/O NVS continua nas tasks de RAM interna que já existem.
 

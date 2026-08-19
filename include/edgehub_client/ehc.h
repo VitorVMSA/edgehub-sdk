@@ -48,7 +48,7 @@ ehc_readiness_t ehc_get_readiness(void);
 const char *ehc_readiness_name(ehc_readiness_t r);
 const char *ehc_not_ready_reason(void);
 
-#define EHC_LIB_VERSION "0.2.0"
+#define EHC_LIB_VERSION "0.2.1"
 
 #ifdef __cplusplus
 }
