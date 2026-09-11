@@ -13,6 +13,7 @@
 #define EHC_CHECKIN_INTERVAL_MS   43200000UL
 #define EHC_TELEMETRY_INTERVAL_MS 10000UL
 #define EHC_TELEMETRY_BATCH_MAX   1 /* live sensors; replay histórico: 8 + ehc_tel_enqueue/flush */
+/* #define EHC_COMMAND_POLL_INTERVAL_MS 60000UL */
 #define EHC_NOT_READY_LOG_MS      60000UL
 /* ESP32 com pool grande: #define EHC_CTX_ATTR __attribute__((section(".ext_ram.bss"))) */
 

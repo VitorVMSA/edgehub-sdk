@@ -3,6 +3,11 @@
 
 #include "edgehub_client/ehc.h"
 
+/* memset(&user, 0) = master actual (check-in + telemetria + comandos).
+ * Slave: user.disable_telemetry = 1; metric_count = 0.
+ * PKCS#8: u.identity_pkcs8 = EHC_IDENT_STORE("..."); auto-liga credential/issue.
+ * Slave com comandos MDM: poll_commands = 1 (POST telemetria vazia; conta telemetry_events). */
+
 #ifdef __cplusplus
 extern "C" {
 #endif

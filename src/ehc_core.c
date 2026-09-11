@@ -191,6 +191,7 @@ ehc_status_t ehc_ensure_eh_client(void)
   char gk[EHC_IDENT_MAX];
   char pc[EHC_IDENT_MAX];
   char pkcs8[512];
+  int pkcs8_ok;
 
   if (g_ehc.eh_inited) {
     if (ehc_resolve_ident(&g_ehc.user.group_key, gk, sizeof(gk)) &&
@@ -218,13 +219,15 @@ ehc_status_t ehc_ensure_eh_client(void)
   }
   cfg.enable_logs = 1;
   cfg.log_level = EH_LOG_INFO;
-  cfg.enable_checkin = 1;
-  cfg.enable_telemetry = 1;
-  cfg.enable_commands = 1;
+  cfg.enable_checkin = g_ehc.user.disable_checkin ? 0 : 1;
+  cfg.enable_telemetry = g_ehc.user.disable_telemetry ? 0 : 1;
+  cfg.enable_commands = g_ehc.user.disable_commands ? 0 : 1;
   cfg.enable_auto_confirm_commands = 1;
   cfg.checkin_on_keys_change = 1;
   cfg.telemetry_manual_only = g_ehc.user.telemetry_manual_only ? 1 : 0;
-  cfg.enable_identity_credential_issue = g_ehc.user.enable_identity_credential_issue ? 1 : 0;
+  pkcs8_ok = ehc_resolve_ident(&g_ehc.user.identity_pkcs8, pkcs8, sizeof(pkcs8));
+  cfg.enable_identity_credential_issue =
+    (g_ehc.user.enable_identity_credential_issue || pkcs8_ok) ? 1 : 0;
   cfg.checkin_interval_ms = (uint32_t)EHC_CHECKIN_INTERVAL_MS;
   cfg.telemetry_interval_ms = (uint32_t)EHC_TELEMETRY_INTERVAL_MS;
   cfg.telemetry_batch_max = g_ehc.user.telemetry_batch_max
@@ -249,7 +252,7 @@ ehc_status_t ehc_ensure_eh_client(void)
   }
   g_ehc.eh_inited = 1;
   ehc_load_secret();
-  if (ehc_resolve_ident(&g_ehc.user.identity_pkcs8, pkcs8, sizeof(pkcs8))) {
+  if (pkcs8_ok) {
     (void)eh_client_set_identity_private_key_pkcs8_b64(&g_ehc.eh, pkcs8);
   }
   return EHC_OK;
@@ -259,6 +262,10 @@ static ehc_status_t validate_user(const ehc_user_t *user)
 {
   if (!user) {
     return EHC_EINVAL;
+  }
+  if (user->disable_telemetry && user->disable_commands && user->disable_checkin) {
+    ehc_logf(EHC_LOG_ERROR, "all disable_* flags set; device ABI would re-enable all");
+    return EHC_ECONFIG;
   }
   if (user->metric_count > EHC_MAX_METRICS) {
     ehc_logf(EHC_LOG_ERROR, "metric table exceeds EHC_MAX_METRICS (%u)", (unsigned)EHC_MAX_METRICS);
@@ -272,14 +279,18 @@ static ehc_status_t validate_user(const ehc_user_t *user)
     ehc_logf(EHC_LOG_ERROR, "check-in key table exceeds EHC_MAX_CHECKIN_KEYS");
     return EHC_ECONFIG;
   }
-  if (ehc_telemetry_validate_table() != 0) {
-    return EHC_ECONFIG;
+  if (!(user->disable_telemetry && user->metric_count == 0)) {
+    if (ehc_telemetry_validate_table() != 0) {
+      return EHC_ECONFIG;
+    }
   }
   if (ehc_checkin_validate_table() != 0) {
     return EHC_ECONFIG;
   }
-  if (ehc_commands_validate_table() != 0) {
-    return EHC_ECONFIG;
+  if (!(user->disable_commands && user->command_count == 0)) {
+    if (ehc_commands_validate_table() != 0) {
+      return EHC_ECONFIG;
+    }
   }
   return EHC_OK;
 }
@@ -371,7 +382,27 @@ ehc_status_t ehc_tick(void)
   }
   ehc_persist_secret_if_changed();
   ehc_refresh_readiness();
+  if (
+    g_ehc.user.poll_commands &&
+    g_ehc.user.disable_telemetry &&
+    !g_ehc.user.disable_commands &&
+    g_ehc.eh.has_secret_current &&
+    now >= g_ehc.next_command_poll_ms
+  ) {
+    uint32_t interval = (uint32_t)EHC_COMMAND_POLL_INTERVAL_MS;
+    if (interval == 0) {
+      interval = 60000;
+    }
+    if (eh_client_poll_downlink(&g_ehc.eh, now) != EH_OK && rc == EHC_OK) {
+      rc = EHC_EIO;
+    }
+    g_ehc.next_command_poll_ms = now + (uint64_t)interval;
+    if (g_ehc.next_command_poll_ms == 0) {
+      g_ehc.next_command_poll_ms = 1;
+    }
+  }
   if (g_ehc.readiness == EHC_ACTIVE &&
+      !g_ehc.user.disable_telemetry &&
       !g_ehc.user.telemetry_manual_only &&
       eh_client_telemetry_queue_count(&g_ehc.eh) > 0) {
     (void)eh_client_flush_telemetry(&g_ehc.eh, now);
@@ -402,10 +433,80 @@ ehc_status_t ehc_force_checkin(void)
   return rc;
 }
 
+ehc_status_t ehc_set_checkin_interval(uint32_t ms)
+{
+  ehc_status_t rc;
+  if (!g_ehc.used) {
+    return EHC_EINVAL;
+  }
+  ehc_lock();
+  rc = ehc_ensure_eh_client();
+  if (rc == EHC_OK) {
+    rc = (eh_client_set_checkin_interval(&g_ehc.eh, ms) == EH_OK) ? EHC_OK : EHC_EIO;
+  }
+  ehc_unlock();
+  return rc;
+}
+
+ehc_status_t ehc_set_telemetry_batch_max(uint8_t n)
+{
+  ehc_status_t rc;
+  if (!g_ehc.used) {
+    return EHC_EINVAL;
+  }
+  ehc_lock();
+  rc = ehc_ensure_eh_client();
+  if (rc == EHC_OK) {
+    rc = (eh_client_set_telemetry_batch_max(&g_ehc.eh, n) == EH_OK) ? EHC_OK : EHC_EIO;
+  }
+  ehc_unlock();
+  return rc;
+}
+
+ehc_status_t ehc_set_telemetry_interval(uint32_t ms)
+{
+  ehc_status_t rc;
+  if (!g_ehc.used) {
+    return EHC_EINVAL;
+  }
+  ehc_lock();
+  rc = ehc_ensure_eh_client();
+  if (rc == EHC_OK) {
+    rc = (eh_client_set_telemetry_interval(&g_ehc.eh, ms) == EH_OK) ? EHC_OK : EHC_EIO;
+  }
+  ehc_unlock();
+  return rc;
+}
+
+ehc_status_t ehc_get_device_status(ehc_device_status_t *out)
+{
+  eh_client_status_t st;
+  if (!out) {
+    return EHC_EINVAL;
+  }
+  memset(out, 0, sizeof(*out));
+  if (!g_ehc.used) {
+    return EHC_EINVAL;
+  }
+  ehc_lock();
+  if (g_ehc.eh_inited) {
+    eh_client_get_status(&g_ehc.eh, &st);
+    out->provisioning = (uint8_t)st.provisioning;
+    out->next_checkin_at_ms = st.next_checkin_at_ms;
+    out->backoff_until_ms = st.backoff_until_ms;
+    out->pending_command_count = st.pending_command_count;
+  }
+  ehc_unlock();
+  return EHC_OK;
+}
+
 static ehc_status_t tel_enqueue_locked(const char *ts_iso)
 {
   ehc_status_t rc;
   uint64_t now;
+  if (g_ehc.user.disable_telemetry) {
+    return EHC_ENOTREADY;
+  }
   ehc_refresh_readiness();
   if (g_ehc.readiness == EHC_UNCONFIGURED) {
     return EHC_ENOTREADY;
@@ -424,6 +525,9 @@ static ehc_status_t tel_enqueue_locked(const char *ts_iso)
 static ehc_status_t tel_flush_locked(void)
 {
   ehc_status_t rc = EHC_OK;
+  if (g_ehc.user.disable_telemetry) {
+    return EHC_ENOTREADY;
+  }
   ehc_refresh_readiness();
   if (g_ehc.readiness == EHC_ACTIVE && g_ehc.eh_inited) {
     rc = (eh_client_flush_telemetry(&g_ehc.eh, ehc_now()) == EH_OK) ? EHC_OK : EHC_EIO;

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 — 2026-09-11
+
+- Device SDK **1.2.4** (ABI 2) in-tree em `device/`. Um único repositório/submodule para todos os firmwares.
+- `ehc_user_t.disable_telemetry` / `disable_commands` / `disable_checkin`: `memset` 0 = master actual (tudo ligado). Slave: `disable_telemetry=1` e `metric_count=0` — sem POST `/device/telemetry`; `ehc_tel_*` devolve `EHC_ENOTREADY`. Os três `disable_*` a 1 → `EHC_ECONFIG`.
+- Comandos: downlink só em `pendingCommands` da telemetria; `executed` já existia. Opt-in `poll_commands` (slave) faz POST `{values:{}}` no mesmo ingest. HMAC: um retry com `secret_previous` em 401 INVALID; `expiresAt` arma reprovision. PKCS#8 auto-liga credential/issue. Wrappers `ehc_set_checkin_interval` / `ehc_set_telemetry_batch_max` / `ehc_set_telemetry_interval` / `ehc_get_device_status`. Check-in: checksum/source opcionais no offer.
+- CMake: `EHC_DEVICE_SDK_ROOT` default `${repo}/device`; `EHC_TEST_DEVICE_SDK` default ON. `scripts/sync_device_sdk.ps1` deprecado.
+- `EHC_PORT=host|linux|embedded|esp32`; template `port/embedded/` + `examples/embedded_stub` para MCU sem IDF.
+- Colaboração com agentes: `AI-WORKFLOW.md`, `memory-bank/` (contexto + histórico), playbook em `docs/cursor-agents-playbook.md`.
+
 ## 0.2.3 — 2026-09-11
 
 - `ehc_user_t.on_download`: callback de check-in `downloads` (OTA). NULL = só log.

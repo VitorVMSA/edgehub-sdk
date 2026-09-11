@@ -19,6 +19,7 @@ static void fill_user(ehc_user_t *u)
   u->on_config_apply = ehc_user_on_config_apply;
   u->on_download = ehc_user_on_download;
   u->telemetry_manual_only = 0;
+  /* u.identity_pkcs8 = EHC_IDENT_STORE("identity_pkcs8"); auto-liga credential/issue */
 }
 
 int main(void)

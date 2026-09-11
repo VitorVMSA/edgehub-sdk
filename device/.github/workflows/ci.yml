@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-host:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build host library
+        run: |
+          cmake -S . -B build/host -DEH_BUILD_HOST=ON
+          cmake --build build/host
+      - name: Run host simulator
+        run: |
+          cmake -S examples/host_simulator -B build/host_simulator
+          cmake --build build/host_simulator
+          ./build/host_simulator/host_simulator
+      - name: Upload host artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libedgehub_device_host
+          path: |
+            build/host/libedgehub_device.a
+            include/edgehub_device.h
+
+  build-esp32s3:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup ESP-IDF
+        uses: espressif/install-esp-idf-action@v1
+        with:
+          esp-idf-version: v5.5.4
+          target: esp32s3
+      - name: Build ESP32-S3 library
+        run: |
+          cd examples/esp32_minimal
+          idf.py -DIDF_TARGET=esp32s3 build
+          LIB=$(find build -name 'libedgehub_device.a' | head -1)
+          mkdir -p ../../dist/esp32s3
+          cp "$LIB" ../../dist/esp32s3/libedgehub_device.a
+          cp ../../include/edgehub_device.h ../../dist/esp32s3/
+      - name: Upload esp32s3 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libedgehub_device_esp32s3
+          path: dist/esp32s3/

@@ -1,0 +1,31 @@
+Resumo
+Release v0.3.0 do EdgeHub Client SDK. O device SDK 1.2.4 (ABI 2) passa a viver in-tree em device/. Um único repositório/submodule para master, slave e (mais tarde) Apalis. Flags disable_* no client para o slave desligar telemetria sem glue próprio.
+
+Layout
+     * device/ = protocolo 1.2.4, ABI inalterada (EH_LIB_ABI_VERSION 2).
+     * Client na raiz (include/, src/, port/).
+     * CMake: add_subdirectory(device); EHC_DEVICE_SDK_ROOT default = device/.
+
+disable_*
+     * Sintoma: o slave precisava de glue próprio (enable_telemetry=0 no device) e o memset 0 não podia significar "off".
+     * Fix: disable_telemetry / disable_commands / disable_checkin. memset 0 = master (tudo ligado).
+     * disable_telemetry=1 + metric_count=0: check-in OK, zero POST /device/telemetry; ehc_tel_* = EHC_ENOTREADY.
+
+Consumo
+     * git submodule add git@github.com-vmsatech:VitorVMSA/edgehub-client-sdk.git components/edgehub_sdk
+     * Device: EH_SDK_DIR = ../edgehub_sdk/device
+     * Client: ../edgehub_sdk/src, include, port/esp32
+     * Firmware EcoCircuito não é migrado nesta entrega.
+
+Versão
+     * VERSION: 0.3.0 (umbrella)
+     * EHC_LIB_VERSION: 0.3.0
+     * device/: 1.2.4 / ABI 2
+     * Tag: v0.3.0
+     * Data: 2026-09-11
+
+Validação
+     * Boot: lib=1.2.4 client=0.3.0 abi=2
+     * .\scripts\test_host.ps1 -DeviceSdk
+
+Desde v0.2.3 (on_download, EHC_CTX_ATTR, retry ESP32, lock reentrante).

@@ -1,0 +1,19 @@
+# Ficheiros desta versão — um submodule components/edgehub_sdk
+# (o firmware deixa de ter edgehub_device/sdk + edgehub_client/sdk)
+
+Origem (raiz deste repo)                              Destino no firmware
+device/                                                components/edgehub_sdk/device/
+src/                                                   components/edgehub_sdk/src/
+include/edgehub_client/                                components/edgehub_sdk/include/edgehub_client/
+port/esp32/                                            components/edgehub_sdk/port/esp32/
+VERSION                                                components/edgehub_sdk/VERSION
+device/VERSION                                         1.2.4
+device/include/edgehub_device.h                        ABI 2
+
+Não vai no consumo do firmware (fica só neste repo)
+     tests/  examples/  docs/  user_template/  port/linux/  port/host_stub/
+     device/tests/  device/examples/  device/releases/
+
+Glue EcoCircuito (não é desta lib)
+     overlay / ehc_user_*.c  edgehub_apply.c  edgehub_storage.c
+     fallback config.apply

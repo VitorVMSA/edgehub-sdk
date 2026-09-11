@@ -1,0 +1,12 @@
+build/
+dist/
+# pacotes gerados; notas em releases/v*/ (release_notes, SYNC, MANIFEST) são versionadas
+releases/**/host/
+releases/**/esp32s3/
+releases/**/lib/
+releases/**/src/
+releases/**/*.a
+releases/**/*.tar.gz
+*.user
+.vscode/
+.idea/

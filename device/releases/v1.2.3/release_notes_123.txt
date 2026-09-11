@@ -1,0 +1,31 @@
+Resumo
+Release v1.2.3 do EdgeHub Device SDK (ABI 2). O check-in passa a tratar identityChallenge em HTTP 4xx (incluindo 401), honra Retry-After em qualquer status e aceita JSON com espaço após ':'. Requer recompile das fontes no firmware (não usar .a com EH_MAX_TELEMETRY_QUEUE_VALUES=768).
+
+Check-in HTTP 401 / identityChallenge
+     * Sintoma: check-in falhava com HTTP 401 CHECKIN_DEVICE_IDENTITY_NOT_REGISTERED mesmo quando o body trazia identityChallenge e o credential/issue emitia HMAC.
+     * Causa: o parser só processava challenge em 2xx; 401 era falha imediata.
+     * Fix: processar identityChallenge também em 4xx; se o issue de credential devolver HMAC, o check-in conta como sucesso.
+     * Backoff 300 s nesse código quando o port não envia Retry-After.
+
+HTTP Retry-After
+     * eh_client_note_http_retry honra Retry-After em qualquer status (não só 429).
+
+Parser JSON
+     * Strings aceitam espaço após ':' (`"challengeId": "…"`), formato habitual do servidor.
+
+Logs
+     * checkin_oom, checkin_fail http=, checkin_response_truncated.
+
+Versão
+     * VERSION: 1.2.3
+     * EH_LIB_VERSION: 1.2.3
+     * EH_LIB_ABI_VERSION: 2
+     * Tag: v1.2.3
+     * Data: 2026-09-11
+
+Consumo no firmware EcoCircuito
+     * Pasta: C:\workspace\ecocircuito\edgehub-device-sdk
+     * Sync: scripts\sync_edgehub_sources.ps1
+     * Ver SYNC.txt e MANIFEST.txt nesta pasta.
+
+Desde v1.2.2 (fila eh_client_telemetry_queue_clear e telemetry_queue_persist).

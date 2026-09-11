@@ -87,15 +87,25 @@ void ehc_host_push_reply_ex(
   r->fail_transport = fail_transport;
 }
 
-static const ehc_host_reply_t *find_reply(const char *url)
+static int take_reply(const char *url, ehc_host_reply_t *out)
 {
   int i;
   for (i = 0; i < s_host.reply_count; i++) {
     if (!s_host.replies[i].match[0] || (url && strstr(url, s_host.replies[i].match))) {
-      return &s_host.replies[i];
+      if (out) {
+        *out = s_host.replies[i];
+      }
+      if (i + 1 < s_host.reply_count) {
+        memmove(
+          &s_host.replies[i],
+          &s_host.replies[i + 1],
+          (size_t)(s_host.reply_count - i - 1) * sizeof(ehc_host_reply_t));
+      }
+      s_host.reply_count--;
+      return 1;
     }
   }
-  return NULL;
+  return 0;
 }
 
 int ehc_host_capture_count(void)
@@ -220,7 +230,8 @@ static int host_http(
   uint8_t *resp, size_t resp_cap, size_t *resp_len, int *http_status,
   uint32_t *retry_after_sec)
 {
-  const ehc_host_reply_t *reply;
+  ehc_host_reply_t reply_copy;
+  int have_reply;
   ehc_host_http_capture_t *cap;
   const char *out_body;
   int status;
@@ -243,12 +254,12 @@ static int host_http(
     }
   }
 
-  reply = find_reply(url);
-  if (reply && reply->fail_transport) {
+  have_reply = take_reply(url, &reply_copy);
+  if (have_reply && reply_copy.fail_transport) {
     return 0;
   }
-  status = reply ? reply->http_status : s_host.default_status;
-  out_body = reply ? reply->body : s_host.default_body;
+  status = have_reply ? reply_copy.http_status : s_host.default_status;
+  out_body = have_reply ? reply_copy.body : s_host.default_body;
   n = strlen(out_body);
   if (resp && resp_cap > n) {
     memcpy(resp, out_body, n);
@@ -269,7 +280,7 @@ static int host_http(
     *http_status = status;
   }
   if (retry_after_sec) {
-    *retry_after_sec = (reply && status == 429) ? reply->retry_after_sec : 0;
+    *retry_after_sec = (have_reply && status == 429) ? reply_copy.retry_after_sec : 0;
   }
   return 1;
 }

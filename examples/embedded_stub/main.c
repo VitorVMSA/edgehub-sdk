@@ -1,0 +1,46 @@
+#include "ehc_port_embedded.h"
+#include "ehc_user.h"
+#include <stdio.h>
+#include <string.h>
+
+static void fill_user(ehc_user_t *u)
+{
+  memset(u, 0, sizeof(*u));
+  u->base_url = (ehc_identity_source_t)EHC_IDENT_LIT("https://example.edgehub.test");
+  u->device_uid = (ehc_identity_source_t)EHC_IDENT_LIT("embedded-stub");
+  u->group_key = (ehc_identity_source_t)EHC_IDENT_LIT("demo-group");
+  u->product_code = (ehc_identity_source_t)EHC_IDENT_LIT("demo-product");
+  u->checkin_keys = ehc_user_checkin_keys;
+  u->checkin_key_count = ehc_user_checkin_keys_count;
+  u->metrics = ehc_user_metrics;
+  u->metric_count = ehc_user_metrics_count;
+  u->commands = ehc_user_commands;
+  u->command_count = ehc_user_commands_count;
+  u->on_config_apply = ehc_user_on_config_apply;
+  u->on_download = ehc_user_on_download;
+  /* u.identity_pkcs8 = EHC_IDENT_STORE("identity_pkcs8"); auto-liga credential/issue */
+}
+
+int main(void)
+{
+  ehc_port_t port;
+  ehc_user_t user;
+  ehc_status_t rc;
+  if (!ehc_port_embedded_init(&port)) {
+    fprintf(stderr, "port init failed\n");
+    return 1;
+  }
+  fill_user(&user);
+  rc = ehc_init(&port, &user);
+  if (rc != EHC_OK) {
+    fprintf(stderr, "ehc_init failed: %s\n", ehc_not_ready_reason());
+    ehc_port_embedded_deinit();
+    return 1;
+  }
+  printf("readiness=%s port=embedded\n", ehc_readiness_name(ehc_get_readiness()));
+  (void)ehc_tel_set_num("temperature", 22.5);
+  (void)ehc_tick();
+  ehc_shutdown();
+  ehc_port_embedded_deinit();
+  return 0;
+}

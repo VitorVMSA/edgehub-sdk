@@ -29,6 +29,7 @@ ehc_add_test(test_telemetry_batch)
 ehc_add_test(test_commands)
 ehc_add_test(test_assets)
 ehc_add_test(test_offline)
+ehc_add_test(test_features)
 
 if(EHC_COVERAGE AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
   add_custom_target(ehc_coverage

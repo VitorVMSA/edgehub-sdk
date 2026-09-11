@@ -1,4 +1,6 @@
 build/
+device/build/
+device/dist/
 .vs/
 CMakeUserPresets.json
 CMakeCache.txt

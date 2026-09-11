@@ -4,15 +4,23 @@ O HAL está em `include/edgehub_client/ehc_port.h`. Implemente:
 
 | Callback | Notas |
 |---|---|
-| `http_post` | **nonzero = transporte OK**, mesmo em HTTP 4xx/5xx. Preencha `http_status` e `retry_after_sec` quando o servidor enviar `Retry-After` (não só em 429). Use esta variante (`http_post_ex` no device SDK). |
+| `http_post` | **nonzero = transporte OK**, mesmo em HTTP 4xx/5xx. Preencha `http_status` e `retry_after_sec` quando o servidor enviar `Retry-After` (não só em 429). Use esta variante (`http_post_ex` no device SDK). **Não há `http_get` no HAL:** o GET de `downloadUrl` (OTA) fica em `on_download` na aplicação. |
 | `storage_read` / `storage_write` | blobs opacos. Segredo HMAC em `ehc.hmac.secret` / `.prev`. Versões de asset em `ehc.asset.<key>`. **Não** mapear `eh.tel.q` — a fila do client é só RAM. |
 | `now_ms` | relógio monotónico ou wall-clock em milissegundos. |
 | `log` | opcional |
 | `lock` / `unlock` | opcional; obrigatório se `ehc_tick` e HTTP/storage puderem correr em threads distintas. `ehc_lock` é reentrante (`lock_depth`): `ehc_tel_set_*` e `ehc_tel_reset` são seguros entre tasks e a partir de callbacks da lib (`on_config_apply`, `on_download`). |
 
+Troca de alvo: o client e `device/` ficam iguais. CMake host: `-DEHC_PORT=host|linux|embedded|esp32` (`esp32` = projecto IDF `examples/esp32_demo`).
+
 ## Linux (`port/linux`)
 
 OpenSSL BIO com `SO_RCVTIMEO`/`SO_SNDTIMEO` (default 12 s). Storage = um ficheiro por chave num directório. `clock_gettime(CLOCK_REALTIME)`. Mutex pthread. `ehc_thread_start(period_ms)` arranca um loop de `ehc_tick`.
+
+## Embarcado genérico (`port/embedded`)
+
+C99 sem POSIX/IDF. Stubs: `http_post` falha transporte; storage RAM (8 chaves); `now_ms` sintético; lock NULL. Demo: `examples/embedded_stub` (`ehc_embedded_stub`).
+
+No MCU: copiar `port/embedded/ehc_port_embedded.c` e substituir HTTPS, flash e mutex. Ligar `ed25519_random_embedded.c` **em vez de** `device/platform/ed25519_random_host.c` e trocar o PRNG por TRNG. Não compilar os dois no mesmo binário.
 
 ## ESP32 (`port/esp32`) — greenfield
 
@@ -24,7 +32,7 @@ On-device: o primeiro POST após RST deve recuperar.
 
 **Regra dura:** I/O de NVS só em tasks com stack em **RAM interna**. Se a task do client corre em PSRAM, compile com `-DEHC_PORT_ESP32_STORAGE_WORKER=1` — o port despacha read/write para um worker interno.
 
-Compile as **fontes** do device SDK **1.2.3+** (já sem `vendor/cjson` nos `INCLUDE_DIRS`). O `.a` prebuilt com `EH_MAX_TELEMETRY_QUEUE_VALUES=768` **não** serve para payloads maiores — use `-DEH_MAX_TELEMETRY_QUEUE_VALUES=4096` (e `-DEH_MAX_TELEMETRY_QUEUE=8`) no mesmo compile que o header. `EH_MAX_BATCH_PAYLOAD` permanece 64 KiB.
+Compile as **fontes** de `device/` **1.2.4** (já sem `vendor/cjson` nos `INCLUDE_DIRS`). O `.a` prebuilt com `EH_MAX_TELEMETRY_QUEUE_VALUES=768` **não** serve para payloads maiores — use `-DEH_MAX_TELEMETRY_QUEUE_VALUES=4096` (e `-DEH_MAX_TELEMETRY_QUEUE=8`) no mesmo compile que o header. `EH_MAX_BATCH_PAYLOAD` permanece 64 KiB. No slave, `EH_MAX_TELEMETRY_QUEUE=1` e `disable_telemetry=1`.
 
 ## Storage legado (EcoCircuito já provisionado)
 

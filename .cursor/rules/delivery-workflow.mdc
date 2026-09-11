@@ -1,0 +1,28 @@
+---
+description: Fluxo de entrega — proposta, aprovação, implementação, memory-bank.
+alwaysApply: true
+---
+
+# Fluxo de entrega
+
+1. **Proposta** — agente `feature-proposal` ou plano em `.cursor/plans/`; sem código.
+2. **Aprovação explícita** no chat.
+3. **Implementação** — escopo mínimo; rules por glob / alwaysApply.
+4. **Revisão** — `sdk-review` se ABI, ports, flags ou HTTP.
+5. **Memória** — atualizar `memory-bank/` ao concluir trabalho relevante (`AI-WORKFLOW.md`).
+
+## Commits
+
+- Não commitar sem pedido explícito.
+
+## Idioma
+
+- Respostas ao utilizador: **português**.
+
+## Playbook
+
+Prompts: `docs/cursor-agents-playbook.md`.
+
+## Memória
+
+Ler `memory-bank/active-context.md` no início de trabalho não trivial. Skill `memory-bank`.

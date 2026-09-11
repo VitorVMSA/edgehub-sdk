@@ -1,0 +1,19 @@
+---
+description: Troca de alvo Linux vs embarcado — só o port muda; client e device/ são partilhados.
+alwaysApply: true
+---
+
+# Ports (Linux / embarcado)
+
+O núcleo (`src/`, `device/`, `user_template/`) **não** se duplica por plataforma.
+
+| Alvo | Pasta | CMake / build |
+|------|--------|----------------|
+| Testes host | `port/host_stub/` | default (`EHC_PORT=host`) |
+| Linux / Apalis | `port/linux/` | `-DEHC_PORT=linux` (Unix + OpenSSL) |
+| ESP32 | `port/esp32/` | IDF `examples/esp32_demo` (`EHC_PORT=esp32`) |
+| MCU genérico | `port/embedded/` | `-DEHC_PORT=embedded`; copiar stubs e preencher HTTPS/flash/TRNG |
+
+Loop da aplicação: `ehc_init(&port, &user);` + `ehc_tick()`. Slave: `disable_telemetry=1`. Não meter glue EcoCircuito (`config.apply`, NVS legado) nesta lib.
+
+Novo MCU: copiar `port/embedded/` + `ed25519_random_embedded.c` (em vez de `device/platform/ed25519_random_host.c`). Ver skill `ehc-porting` e `docs/PORTING.md`.

@@ -155,6 +155,17 @@ int ehc_telemetry_validate_table(void)
   return 0;
 }
 
+static ehc_status_t tel_begin(void)
+{
+  if (!g_ehc.used) {
+    return EHC_EINVAL;
+  }
+  if (g_ehc.user.disable_telemetry) {
+    return EHC_ENOTREADY;
+  }
+  return EHC_OK;
+}
+
 static ehc_status_t set_num_idx(int idx, double value)
 {
   if (idx < 0 || g_ehc.user.metrics[idx].kind != EHC_VAL_NUM) {
@@ -195,7 +206,10 @@ ehc_status_t ehc_tel_set_num(const char *name, double value)
 {
   ehc_status_t rc;
   ehc_lock();
-  rc = set_num_idx(ehc_metric_index(NULL, name), value);
+  rc = tel_begin();
+  if (rc == EHC_OK) {
+    rc = set_num_idx(ehc_metric_index(NULL, name), value);
+  }
   ehc_unlock();
   return rc;
 }
@@ -204,7 +218,10 @@ ehc_status_t ehc_tel_set_str(const char *name, const char *value)
 {
   ehc_status_t rc;
   ehc_lock();
-  rc = set_str_idx(ehc_metric_index(NULL, name), value);
+  rc = tel_begin();
+  if (rc == EHC_OK) {
+    rc = set_str_idx(ehc_metric_index(NULL, name), value);
+  }
   ehc_unlock();
   return rc;
 }
@@ -213,7 +230,10 @@ ehc_status_t ehc_tel_set_bool(const char *name, int value)
 {
   ehc_status_t rc;
   ehc_lock();
-  rc = set_bool_idx(ehc_metric_index(NULL, name), value);
+  rc = tel_begin();
+  if (rc == EHC_OK) {
+    rc = set_bool_idx(ehc_metric_index(NULL, name), value);
+  }
   ehc_unlock();
   return rc;
 }
@@ -222,7 +242,10 @@ ehc_status_t ehc_tel_set_num_in(const char *parent, const char *name, double val
 {
   ehc_status_t rc;
   ehc_lock();
-  rc = set_num_idx(ehc_metric_index(parent, name), value);
+  rc = tel_begin();
+  if (rc == EHC_OK) {
+    rc = set_num_idx(ehc_metric_index(parent, name), value);
+  }
   ehc_unlock();
   return rc;
 }
@@ -231,7 +254,10 @@ ehc_status_t ehc_tel_set_str_in(const char *parent, const char *name, const char
 {
   ehc_status_t rc;
   ehc_lock();
-  rc = set_str_idx(ehc_metric_index(parent, name), value);
+  rc = tel_begin();
+  if (rc == EHC_OK) {
+    rc = set_str_idx(ehc_metric_index(parent, name), value);
+  }
   ehc_unlock();
   return rc;
 }
@@ -240,7 +266,10 @@ ehc_status_t ehc_tel_set_bool_in(const char *parent, const char *name, int value
 {
   ehc_status_t rc;
   ehc_lock();
-  rc = set_bool_idx(ehc_metric_index(parent, name), value);
+  rc = tel_begin();
+  if (rc == EHC_OK) {
+    rc = set_bool_idx(ehc_metric_index(parent, name), value);
+  }
   ehc_unlock();
   return rc;
 }
@@ -249,7 +278,10 @@ ehc_status_t ehc_tel_set_num_at(const char *path, double value)
 {
   ehc_status_t rc;
   ehc_lock();
-  rc = set_num_idx(ehc_metric_index_at(path), value);
+  rc = tel_begin();
+  if (rc == EHC_OK) {
+    rc = set_num_idx(ehc_metric_index_at(path), value);
+  }
   ehc_unlock();
   return rc;
 }
@@ -258,7 +290,10 @@ ehc_status_t ehc_tel_set_str_at(const char *path, const char *value)
 {
   ehc_status_t rc;
   ehc_lock();
-  rc = set_str_idx(ehc_metric_index_at(path), value);
+  rc = tel_begin();
+  if (rc == EHC_OK) {
+    rc = set_str_idx(ehc_metric_index_at(path), value);
+  }
   ehc_unlock();
   return rc;
 }
@@ -267,7 +302,10 @@ ehc_status_t ehc_tel_set_bool_at(const char *path, int value)
 {
   ehc_status_t rc;
   ehc_lock();
-  rc = set_bool_idx(ehc_metric_index_at(path), value);
+  rc = tel_begin();
+  if (rc == EHC_OK) {
+    rc = set_bool_idx(ehc_metric_index_at(path), value);
+  }
   ehc_unlock();
   return rc;
 }

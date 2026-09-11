@@ -1,0 +1,11 @@
+# Ficheiros desta versão que o firmware EcoCircuito sincroniza
+# (análogo à tabela de partições do release de firmware)
+
+Origem (esta pasta = raiz do repo)          Destino no firmware
+include/edgehub_device.h                    components/edgehub_device/include/edgehub_device.h
+VERSION                                  components/edgehub_device/VERSION
+src/edgehub_device.c                     components/edgehub_device/src/edgehub_device.c
+src/internal/                            components/edgehub_device/src/internal/
+
+Não vai no sync (fica só neste repo)
+     tests/  examples/  docs/  cmake/  platform/  vendor/  scripts/  CHANGELOG.md

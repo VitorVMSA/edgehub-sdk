@@ -23,6 +23,7 @@ static void fill_user(ehc_user_t *u)
   u->command_count = ehc_user_commands_count;
   u->on_config_apply = ehc_user_on_config_apply;
   u->on_download = ehc_user_on_download;
+  /* u.identity_pkcs8 = EHC_IDENT_STORE("identity_pkcs8"); auto-liga credential/issue */
 }
 
 void app_main(void)

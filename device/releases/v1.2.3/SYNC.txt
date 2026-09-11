@@ -1,0 +1,28 @@
+Consumo no firmware EcoCircuito (não é flash USB)
+
+Pasta da lib
+     C:\workspace\ecocircuito\edgehub-device-sdk
+
+Sync para o firmware
+  powershell
+    Set-Location C:\workspace\ecocircuito\ecocircuito-maq_v3.0_refatorado
+    .\scripts\sync_edgehub_sources.ps1
+
+Destino
+     components\edgehub_device\include\edgehub_device.h
+     components\edgehub_device\VERSION
+     components\edgehub_device\src\edgehub_device.c
+     components\edgehub_device\src\internal\
+
+Compile no ESP-IDF (obrigatório para payloads ~4 KiB)
+     -DEH_MAX_TELEMETRY_QUEUE=8
+     -DEH_MAX_TELEMETRY_QUEUE_VALUES=4096
+     ED25519_REFHASH + ED25519_CUSTOMRANDOM
+
+O .a pré-compilado com default 768 NÃO serve para o EcoCircuito.
+Após o sync, reaplicar no firmware os patches locais (g_ehc PSRAM, OTA, config.apply) — estão no client glue, não nesta lib.
+
+Validação
+     Boot: lib=1.2.3 abi=2
+     eh_lib_abi_check() == EH_OK
+     Testes host: cmake -S . -B build/tests -DEH_BUILD_TESTS=ON

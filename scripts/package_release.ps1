@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "0.2.3"
+    [string]$Version = "0.3.0"
 )
 
 $ErrorActionPreference = "Stop"
@@ -22,6 +22,26 @@ foreach ($d in $copyDirs) {
     if (Test-Path $src) {
         New-Item -ItemType Directory -Force -Path $dst | Out-Null
         Copy-Item (Join-Path $src "*") $dst -Recurse -Force
+    }
+}
+
+$deviceSrc = Join-Path $Root "device"
+$deviceDst = Join-Path $OutRoot "device"
+if (Test-Path (Join-Path $deviceSrc "CMakeLists.txt")) {
+    New-Item -ItemType Directory -Force -Path $deviceDst | Out-Null
+    foreach ($d in @("src", "include", "cmake", "platform", "vendor")) {
+        $src = Join-Path $deviceSrc $d
+        $dst = Join-Path $deviceDst $d
+        if (Test-Path $src) {
+            New-Item -ItemType Directory -Force -Path $dst | Out-Null
+            Copy-Item (Join-Path $src "*") $dst -Recurse -Force
+        }
+    }
+    foreach ($name in @("CMakeLists.txt", "VERSION", "LICENSE")) {
+        $src = Join-Path $deviceSrc $name
+        if (Test-Path $src) {
+            Copy-Item $src $deviceDst -Force
+        }
     }
 }
 

@@ -1,46 +1,57 @@
 # EdgeHub Client SDK
 
-Camada C99 portável por cima do [`edgehub-device-sdk`](https://github.com) **≥ v1.2.3** (ABI 2). Trata sozinha de:
+Camada C99 portável. Inclui o protocolo [`edgehub-device-sdk`](https://github.com/VitorVMSA/edgehub-device-sdk) **1.2.4** (ABI 2) em `device/`. Trata sozinha de:
 
 - **Prontidão** — não envia nada à rede sem `base_url`, `device_uid` e keys obrigatórias
 - **Check-in** mínimo vs completo (`group_key` + `product_code`)
 - **Telemetria** — tabela estática, JSON aninhado, push, getters, fila (`enqueue`/`flush`) e lote `readings[]`
 - **Comandos** — dispatch por `commandKey`, argumentos tipados, `DEFER_AFTER_ACK`
+- **Features a menos** — `disable_telemetry` / `disable_commands` / `disable_checkin` (`memset` 0 = tudo ligado)
 
-Versão: **0.2.3**. Sem `malloc` nesta camada (o batch de 64 KiB do device SDK continua opt-in). A fila de telemetria do client é só RAM — persistência de pacotes fica na aplicação. Notas e manifesto de sync: `releases/v0.2.3/`.
+Versão umbrella: **0.3.0** (`lib=1.2.4 client=0.3.0 abi=2`). Sem `malloc` nesta camada (o batch de 64 KiB do device SDK continua opt-in). A fila de telemetria do client é só RAM — persistência de pacotes fica na aplicação. Notas e manifesto de sync: `releases/v0.3.0/`.
 
 ## Layout
 
 ```
-include/edgehub_client/   API pública
-src/                      núcleo
-port/{esp32,linux,host_stub}/
+device/                   protocolo (ABI 2, 1.2.4)
+include/edgehub_client/   API pública do client
+src/                      núcleo do client
+port/{esp32,linux,embedded,host_stub}/
 user_template/            copiar para o firmware
-examples/{linux_demo,esp32_demo}/
+examples/{linux_demo,esp32_demo,embedded_stub}/
 tests/                    Unity + CTest
-releases/v0.2.3/          release_notes, SYNC, MANIFEST
+releases/v0.3.0/          release_notes, SYNC, MANIFEST
 ```
 
-O device SDK é um submodule em `third_party/edgehub-device-sdk` **ou** o irmão `../edgehub-device-sdk`. CMake procura os dois. `scripts/sync_device_sdk.ps1` cria a pasta local.
+O CMake faz `add_subdirectory(device)` (`EHC_DEVICE_SDK_ROOT` default). Não é preciso o irmão `../edgehub-device-sdk` nem `third_party/`.
 
 ## Build e testes (host)
 
 ```powershell
-cmake -S . -B build -DEHC_BUILD_TESTS=ON
+.\scripts\test_host.ps1 -DeviceSdk
+```
+
+Ou:
+
+```powershell
+cmake -S . -B build -DEHC_BUILD_TESTS=ON -DEHC_TEST_DEVICE_SDK=ON
 cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-Ou `scripts/test_host.ps1` / `scripts/test_host.sh`.
-
-Os testes da lib C (device SDK) correm no mesmo `ctest` com `-DEHC_TEST_DEVICE_SDK=ON`.
+Em Unix: `scripts/test_host.sh`. Os testes Unity do device in-tree correm no mesmo `ctest` (nomes `eh_test_*`).
 
 ## Integração rápida
 
-1. Copiar `user_template/` para o projecto e preencher as tabelas.
-2. Ligar um port (`port/linux` ou `port/esp32`).
-3. `ehc_init(&port, &user)` e `ehc_tick()` no loop.
+1. Submodule deste repo no firmware (ver `releases/v0.3.0/SYNC.txt`).
+2. Copiar `user_template/` para o projecto e preencher as tabelas.
+3. Ligar um port: `port/linux`, `port/esp32`, ou copiar `port/embedded/` para outro MCU (`-DEHC_PORT=linux|embedded|esp32`).
+4. `ehc_init(&port, &user)` e `ehc_tick()` no loop.
 
-Ver `docs/INTEGRATION.md`, `docs/PORTING.md`, `docs/TESTING.md`.
+Slave sem telemetria: `user.disable_telemetry = 1` e `metric_count = 0`. RAM (`EH_MAX_*`, `EHC_TEL_STR_MAX`) continua a ser CMake do firmware.
 
-A migração dos firmwares ESP32 EcoCircuito e Apalis **não** faz parte desta entrega.
+Ver `docs/INTEGRATION.md`, `docs/PORTING.md`, `docs/TESTING.md`. Índice: `docs/README.md`.
+
+Agentes e memória entre sessões: `AGENTS.md`, `AI-WORKFLOW.md`, `memory-bank/`.
+
+A migração dos firmwares ESP32 EcoCircuito e Apalis **não** faz parte desta entrega. Glue EcoCircuito (`config.apply` fallback, NVS legado) **não** entra nesta lib.

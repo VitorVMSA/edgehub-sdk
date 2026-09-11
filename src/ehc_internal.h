@@ -50,6 +50,7 @@ typedef struct {
   char not_ready[160];
   uint64_t last_not_ready_log_ms;
   uint8_t eh_inited;
+  uint64_t next_command_poll_ms;
   char last_secret[EH_MAX_SECRET];
   ehc_metric_state_t metrics[EHC_MAX_METRICS];
   char str_pool[EHC_TEL_STR_SLOTS][EHC_TEL_STR_MAX];
