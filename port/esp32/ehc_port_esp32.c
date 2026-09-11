@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #include "esp_crt_bundle.h"
 #include "esp_http_client.h"
@@ -24,6 +25,7 @@ typedef struct {
   uint8_t *buf;
   size_t cap;
   size_t len;
+  uint32_t retry_after_sec;
 } ehc_esp_resp_t;
 
 typedef struct {
@@ -36,8 +38,6 @@ typedef struct {
   SemaphoreHandle_t done;
 } ehc_nvs_job_t;
 
-static esp_http_client_handle_t s_http;
-static char s_http_host[64];
 static ehc_esp_resp_t s_resp_ctx;
 static SemaphoreHandle_t s_mu;
 #if EHC_PORT_ESP32_STORAGE_WORKER
@@ -60,44 +60,12 @@ static void nvs_key_of(const char *key, char *out, size_t cap)
   snprintf(out, cap, "k%08x", (unsigned)fnv1a(key ? key : ""));
 }
 
-static int host_of(const char *url, char *host, size_t cap)
-{
-  const char *p;
-  const char *end;
-  size_t n;
-  if (!url || !host || cap < 2) {
-    return 0;
-  }
-  p = strstr(url, "://");
-  p = p ? p + 3 : url;
-  end = p;
-  while (*end && *end != '/' && *end != ':' && *end != '?') {
-    end++;
-  }
-  n = (size_t)(end - p);
-  if (n == 0 || n >= cap) {
-    return 0;
-  }
-  memcpy(host, p, n);
-  host[n] = '\0';
-  return 1;
-}
-
 static esp_err_t http_event(esp_http_client_event_t *evt)
 {
   ehc_esp_resp_t *ctx = (ehc_esp_resp_t *)evt->user_data;
-  if (!ctx || evt->event_id != HTTP_EVENT_ON_DATA) {
-    return ESP_OK;
-  }
-  {
-    int copy = evt->data_len;
-    if (ctx->len + (size_t)copy >= ctx->cap) {
-      copy = (int)(ctx->cap - 1 - ctx->len);
-    }
-    if (copy > 0) {
-      memcpy(ctx->buf + ctx->len, evt->data, (size_t)copy);
-      ctx->len += (size_t)copy;
-      ctx->buf[ctx->len] = '\0';
+  if (evt->event_id == HTTP_EVENT_ON_HEADER && ctx && evt->header_key && evt->header_value) {
+    if (strcasecmp(evt->header_key, "Retry-After") == 0) {
+      ctx->retry_after_sec = (uint32_t)atoi(evt->header_value);
     }
   }
   return ESP_OK;
@@ -154,9 +122,10 @@ static int esp_http(
   uint32_t *retry_after_sec)
 {
   esp_http_client_config_t cfg;
-  char host[64];
+  esp_http_client_handle_t http;
   esp_err_t err;
-  char *retry_hdr = NULL;
+  int written;
+  int n;
   (void)ctx;
 
   if (resp_len) {
@@ -175,53 +144,60 @@ static int esp_http(
   s_resp_ctx.buf = resp;
   s_resp_ctx.cap = resp_cap;
   s_resp_ctx.len = 0;
+  s_resp_ctx.retry_after_sec = 0;
 
-  if (!host_of(url, host, sizeof(host))) {
+  memset(&cfg, 0, sizeof(cfg));
+  cfg.url = url;
+  cfg.method = HTTP_METHOD_POST;
+  cfg.timeout_ms = 12000;
+  cfg.event_handler = http_event;
+  cfg.user_data = &s_resp_ctx;
+  cfg.crt_bundle_attach = esp_crt_bundle_attach;
+  cfg.keep_alive_enable = false;
+  cfg.max_authorization_retries = -1;
+  http = esp_http_client_init(&cfg);
+  if (!http) {
     return 0;
   }
-  if (s_http && strcmp(s_http_host, host) == 0) {
-    if (esp_http_client_set_url(s_http, url) != ESP_OK) {
-      esp_http_client_cleanup(s_http);
-      s_http = NULL;
-    }
-  } else if (s_http) {
-    esp_http_client_cleanup(s_http);
-    s_http = NULL;
-  }
-  if (!s_http) {
-    memset(&cfg, 0, sizeof(cfg));
-    cfg.url = url;
-    cfg.method = HTTP_METHOD_POST;
-    cfg.timeout_ms = 12000;
-    cfg.event_handler = http_event;
-    cfg.user_data = &s_resp_ctx;
-    cfg.crt_bundle_attach = esp_crt_bundle_attach;
-    cfg.keep_alive_enable = true;
-    s_http = esp_http_client_init(&cfg);
-    if (!s_http) {
-      return 0;
-    }
-    strncpy(s_http_host, host, sizeof(s_http_host) - 1);
-  }
+  apply_headers(http, headers);
+  (void)esp_http_client_set_method(http, HTTP_METHOD_POST);
 
-  (void)esp_http_client_set_method(s_http, HTTP_METHOD_POST);
-  apply_headers(s_http, headers);
-  (void)esp_http_client_set_post_field(s_http, body ? (const char *)body : "", (int)body_len);
-  err = esp_http_client_perform(s_http);
-  *http_status = esp_http_client_get_status_code(s_http);
-  if (esp_http_client_get_header(s_http, "Retry-After", &retry_hdr) == ESP_OK && retry_hdr && retry_after_sec) {
-    *retry_after_sec = (uint32_t)atoi(retry_hdr);
+  err = esp_http_client_open(http, (int)body_len);
+  if (err != ESP_OK) {
+    ESP_LOGW(TAG, "HTTP open failed: %s url=%s", esp_err_to_name(err), url);
+    esp_http_client_cleanup(http);
+    return 0;
+  }
+  written = esp_http_client_write(http, body ? (const char *)body : "", (int)body_len);
+  if (written < 0 || (body_len > 0 && (size_t)written != body_len)) {
+    ESP_LOGW(TAG, "HTTP write failed url=%s", url);
+    esp_http_client_close(http);
+    esp_http_client_cleanup(http);
+    return 0;
+  }
+  if (esp_http_client_fetch_headers(http) < 0) {
+    ESP_LOGW(TAG, "HTTP headers failed url=%s", url);
+    esp_http_client_close(http);
+    esp_http_client_cleanup(http);
+    return 0;
+  }
+  *http_status = esp_http_client_get_status_code(http);
+  while (s_resp_ctx.len + 1 < s_resp_ctx.cap) {
+    n = esp_http_client_read(http, (char *)s_resp_ctx.buf + s_resp_ctx.len, s_resp_ctx.cap - 1 - s_resp_ctx.len);
+    if (n <= 0) {
+      break;
+    }
+    s_resp_ctx.len += (size_t)n;
+    s_resp_ctx.buf[s_resp_ctx.len] = '\0';
   }
   if (resp_len) {
     *resp_len = s_resp_ctx.len;
   }
-  if (err != ESP_OK) {
-    ESP_LOGW(TAG, "HTTP POST failed: %s url=%s", esp_err_to_name(err), url);
-    esp_http_client_cleanup(s_http);
-    s_http = NULL;
-    s_http_host[0] = '\0';
-    return 0;
+  if (retry_after_sec) {
+    *retry_after_sec = s_resp_ctx.retry_after_sec;
   }
+  esp_http_client_close(http);
+  esp_http_client_cleanup(http);
   return 1;
 }
 
@@ -399,9 +375,4 @@ int ehc_port_esp32_init(ehc_port_t *out)
 
 void ehc_port_esp32_deinit(void)
 {
-  if (s_http) {
-    esp_http_client_cleanup(s_http);
-    s_http = NULL;
-  }
-  s_http_host[0] = '\0';
 }

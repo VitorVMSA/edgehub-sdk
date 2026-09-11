@@ -2,7 +2,7 @@
 
 Copie `user_template/` para o firmware. Não ligue esses `.c` à biblioteca — cada binário traz as suas tabelas.
 
-Requer `edgehub-device-sdk` ≥ **1.2.2** (ABI 2). Client SDK **0.2.1**.
+Requer `edgehub-device-sdk` ≥ **1.2.3** (ABI 2). Client SDK **0.2.2**.
 
 ## 1. Config compile-time
 

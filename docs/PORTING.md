@@ -4,7 +4,7 @@ O HAL está em `include/edgehub_client/ehc_port.h`. Implemente:
 
 | Callback | Notas |
 |---|---|
-| `http_post` | **nonzero = transporte OK**, mesmo em HTTP 4xx/5xx. Preencha `http_status` e, em 429, `retry_after_sec`. Use esta variante (`http_post_ex` no device SDK). |
+| `http_post` | **nonzero = transporte OK**, mesmo em HTTP 4xx/5xx. Preencha `http_status` e `retry_after_sec` quando o servidor enviar `Retry-After` (não só em 429). Use esta variante (`http_post_ex` no device SDK). |
 | `storage_read` / `storage_write` | blobs opacos. Segredo HMAC em `ehc.hmac.secret` / `.prev`. Versões de asset em `ehc.asset.<key>`. **Não** mapear `eh.tel.q` — a fila do client é só RAM. |
 | `now_ms` | relógio monotónico ou wall-clock em milissegundos. |
 | `log` | opcional |
@@ -16,11 +16,11 @@ OpenSSL BIO com `SO_RCVTIMEO`/`SO_SNDTIMEO` (default 12 s). Storage = um ficheir
 
 ## ESP32 (`port/esp32`) — greenfield
 
-`esp_http_client` + `esp_crt_bundle_attach` + keep-alive. NVS namespace `ehc` (chaves mapeadas para 15 caracteres via FNV-1a `k%08x`).
+`esp_http_client` + `esp_crt_bundle_attach`. POST via `open`/`write`/`fetch_headers`/`read` (não `perform`) para o body de HTTP 401 de aplicação chegar ao SDK — o EdgeHub usa 401 sem `WWW-Authenticate`. Lê `Retry-After` no event de header. Sem keep-alive. NVS namespace `ehc` (chaves mapeadas para 15 caracteres via FNV-1a `k%08x`).
 
 **Regra dura:** I/O de NVS só em tasks com stack em **RAM interna**. Se a task do client corre em PSRAM, compile com `-DEHC_PORT_ESP32_STORAGE_WORKER=1` — o port despacha read/write para um worker interno.
 
-Compile as **fontes** do device SDK **1.2.2+** (já sem `vendor/cjson` nos `INCLUDE_DIRS`). O `.a` prebuilt com `EH_MAX_TELEMETRY_QUEUE_VALUES=768` **não** serve para payloads maiores — use `-DEH_MAX_TELEMETRY_QUEUE_VALUES=4096` (e `-DEH_MAX_TELEMETRY_QUEUE=8`) no mesmo compile que o header. `EH_MAX_BATCH_PAYLOAD` permanece 64 KiB.
+Compile as **fontes** do device SDK **1.2.3+** (já sem `vendor/cjson` nos `INCLUDE_DIRS`). O `.a` prebuilt com `EH_MAX_TELEMETRY_QUEUE_VALUES=768` **não** serve para payloads maiores — use `-DEH_MAX_TELEMETRY_QUEUE_VALUES=4096` (e `-DEH_MAX_TELEMETRY_QUEUE=8`) no mesmo compile que o header. `EH_MAX_BATCH_PAYLOAD` permanece 64 KiB.
 
 ## Storage legado (EcoCircuito já provisionado)
 

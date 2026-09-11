@@ -24,7 +24,7 @@ if(NOT EHC_DEVICE_SDK_PREBUILT)
   if(NOT EHC_DEVICE_SDK_ROOT OR NOT EXISTS "${EHC_DEVICE_SDK_ROOT}/CMakeLists.txt")
     message(FATAL_ERROR
       "edgehub-device-sdk not found. Set EHC_DEVICE_SDK_ROOT or run scripts/sync_device_sdk.ps1 "
-      "(expected third_party/edgehub-device-sdk or ../edgehub-device-sdk, tag >= v1.2.2).")
+      "(expected third_party/edgehub-device-sdk or ../edgehub-device-sdk, tag >= v1.2.3).")
   endif()
   if(NOT EHC_TEST_DEVICE_SDK)
     set(EH_BUILD_TESTS OFF CACHE BOOL "Build device SDK Unity tests")

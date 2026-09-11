@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2 — 2026-09-11
+
+- Port ESP32: POST via `open`/`write`/`fetch_headers`/`read` para não descartar HTTP 401 (EdgeHub usa 401 de aplicação, sem `WWW-Authenticate`). Lê `Retry-After` no event de header.
+- Requer **edgehub-device-sdk ≥ 1.2.3**.
+
 ## 0.2.1 — 2026-08-19
 
 - `ehc_tel_reset()`: cache `filled=0` e pool de strings vazio (campos condicionais não contaminam a leitura seguinte). Getters intactos. Sem auto-reset no `enqueue`.
