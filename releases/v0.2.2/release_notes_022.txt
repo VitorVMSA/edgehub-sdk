@@ -1,0 +1,23 @@
+Resumo
+Release v0.2.2 do EdgeHub Client SDK. O port ESP32 deixa de descartar HTTP 401 (EdgeHub usa 401 de aplicação, sem WWW-Authenticate) e lê Retry-After no event de header. Requer edgehub-device-sdk ≥ 1.2.3 (ABI 2).
+
+Port ESP32 — POST 401
+     * Sintoma: check-in/telemetria falhavam ou perdiam o body em HTTP 401; o esp_http_client no modo perform() trata 401 como erro de transporte se não houver WWW-Authenticate.
+     * Causa: o POST antigo não usava open/write/fetch_headers/read; o 401 de aplicação era descartado.
+     * Fix: POST via open / write / fetch_headers / read; Retry-After lido no event de header.
+
+Dependência
+     * edgehub-device-sdk ≥ 1.2.3 (identityChallenge em 4xx + parser JSON com espaço após ':').
+
+Versão
+     * VERSION: 0.2.2
+     * EHC_LIB_VERSION: 0.2.2
+     * Tag: v0.2.2
+     * Data: 2026-09-11
+
+Consumo no firmware EcoCircuito
+     * Pasta: C:\workspace\ecocircuito\edgehub-client-sdk
+     * Sync: scripts\sync_edgehub_sources.ps1
+     * Ver SYNC.txt e MANIFEST.txt nesta pasta.
+
+Desde v0.2.1 (ehc_tel_reset, ehc_tel_queue_clear, fila só em RAM).

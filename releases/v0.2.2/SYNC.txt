@@ -1,0 +1,27 @@
+Consumo no firmware EcoCircuito (não é flash USB)
+
+Pasta da lib
+     C:\workspace\ecocircuito\edgehub-client-sdk
+
+Sync para o firmware
+  powershell
+    Set-Location C:\workspace\ecocircuito\ecocircuito-maq_v3.0_refatorado
+    .\scripts\sync_edgehub_sources.ps1
+
+Destino
+     components\edgehub_client\sdk\src\
+     components\edgehub_client\sdk\include\edgehub_client\
+     components\edgehub_client\sdk\port\esp32\
+     components\edgehub_client\sdk\VERSION
+
+Requer
+     edgehub-device-sdk ≥ 1.2.3 (ABI 2), sincronizado no mesmo passo.
+
+Após o sync, reaplicar no firmware os patches EcoCircuito (não pertencem a esta lib genérica):
+     1. g_ehc em PSRAM (.ext_ram.bss) — ehc_core.c
+     2. ehc_bridge → ehc_user_on_download (OTA EdgeHub)
+     3. Fallback JSON '{' → config.apply — ehc_commands.c
+
+Validação
+     Boot: client=0.2.2 abi=2
+     Testes host: .\scripts\test_host.ps1
