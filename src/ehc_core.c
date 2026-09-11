@@ -1,17 +1,20 @@
 #include "ehc_internal.h"
 
-ehc_ctx_t g_ehc;
+ehc_ctx_t g_ehc EHC_CTX_ATTR;
 
 void ehc_lock(void)
 {
-  if (g_ehc.port.lock) {
+  if (g_ehc.lock_depth++ == 0 && g_ehc.port.lock) {
     g_ehc.port.lock(g_ehc.port.ctx);
   }
 }
 
 void ehc_unlock(void)
 {
-  if (g_ehc.port.unlock) {
+  if (g_ehc.lock_depth == 0) {
+    return;
+  }
+  if (--g_ehc.lock_depth == 0 && g_ehc.port.unlock) {
     g_ehc.port.unlock(g_ehc.port.ctx);
   }
 }

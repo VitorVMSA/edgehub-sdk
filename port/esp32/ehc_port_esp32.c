@@ -38,7 +38,6 @@ typedef struct {
   SemaphoreHandle_t done;
 } ehc_nvs_job_t;
 
-static ehc_esp_resp_t s_resp_ctx;
 static SemaphoreHandle_t s_mu;
 #if EHC_PORT_ESP32_STORAGE_WORKER
 static QueueHandle_t s_nvs_q;
@@ -115,43 +114,30 @@ static void apply_headers(esp_http_client_handle_t client, const char *headers)
   }
 }
 
-static int esp_http(
-  void *ctx, const char *url, const char *headers,
+static int esp_http_once(
+  const char *url, const char *headers,
   const uint8_t *body, size_t body_len,
-  uint8_t *resp, size_t resp_cap, size_t *resp_len, int *http_status,
-  uint32_t *retry_after_sec)
+  ehc_esp_resp_t *rctx, int *http_status)
 {
   esp_http_client_config_t cfg;
   esp_http_client_handle_t http;
   esp_err_t err;
   int written;
   int n;
-  (void)ctx;
 
-  if (resp_len) {
-    *resp_len = 0;
+  rctx->len = 0;
+  rctx->retry_after_sec = 0;
+  if (rctx->buf && rctx->cap) {
+    rctx->buf[0] = '\0';
   }
-  if (http_status) {
-    *http_status = 0;
-  }
-  if (retry_after_sec) {
-    *retry_after_sec = 0;
-  }
-  if (!url || !resp || resp_cap == 0 || !http_status) {
-    return 0;
-  }
-  resp[0] = '\0';
-  s_resp_ctx.buf = resp;
-  s_resp_ctx.cap = resp_cap;
-  s_resp_ctx.len = 0;
-  s_resp_ctx.retry_after_sec = 0;
+  *http_status = 0;
 
   memset(&cfg, 0, sizeof(cfg));
   cfg.url = url;
   cfg.method = HTTP_METHOD_POST;
   cfg.timeout_ms = 12000;
   cfg.event_handler = http_event;
-  cfg.user_data = &s_resp_ctx;
+  cfg.user_data = rctx;
   cfg.crt_bundle_attach = esp_crt_bundle_attach;
   cfg.keep_alive_enable = false;
   cfg.max_authorization_retries = -1;
@@ -182,22 +168,62 @@ static int esp_http(
     return 0;
   }
   *http_status = esp_http_client_get_status_code(http);
-  while (s_resp_ctx.len + 1 < s_resp_ctx.cap) {
-    n = esp_http_client_read(http, (char *)s_resp_ctx.buf + s_resp_ctx.len, s_resp_ctx.cap - 1 - s_resp_ctx.len);
+  while (rctx->buf && rctx->len + 1 < rctx->cap) {
+    n = esp_http_client_read(http, (char *)rctx->buf + rctx->len, rctx->cap - 1 - rctx->len);
     if (n <= 0) {
       break;
     }
-    s_resp_ctx.len += (size_t)n;
-    s_resp_ctx.buf[s_resp_ctx.len] = '\0';
-  }
-  if (resp_len) {
-    *resp_len = s_resp_ctx.len;
-  }
-  if (retry_after_sec) {
-    *retry_after_sec = s_resp_ctx.retry_after_sec;
+    rctx->len += (size_t)n;
+    rctx->buf[rctx->len] = '\0';
   }
   esp_http_client_close(http);
   esp_http_client_cleanup(http);
+  return 1;
+}
+
+static int esp_http(
+  void *ctx, const char *url, const char *headers,
+  const uint8_t *body, size_t body_len,
+  uint8_t *resp, size_t resp_cap, size_t *resp_len, int *http_status,
+  uint32_t *retry_after_sec)
+{
+  ehc_esp_resp_t rctx;
+  int status = 0;
+  int ok;
+  (void)ctx;
+
+  if (resp_len) {
+    *resp_len = 0;
+  }
+  if (http_status) {
+    *http_status = 0;
+  }
+  if (retry_after_sec) {
+    *retry_after_sec = 0;
+  }
+  if (!url || !resp || resp_cap == 0 || !http_status) {
+    return 0;
+  }
+
+  rctx.buf = resp;
+  rctx.cap = resp_cap;
+  rctx.len = 0;
+  rctx.retry_after_sec = 0;
+  ok = esp_http_once(url, headers, body, body_len, &rctx, &status);
+  if (!ok) {
+    ESP_LOGW(TAG, "HTTP transport fail, retry once");
+    ok = esp_http_once(url, headers, body, body_len, &rctx, &status);
+  }
+  if (!ok) {
+    return 0;
+  }
+  *http_status = status;
+  if (resp_len) {
+    *resp_len = rctx.len;
+  }
+  if (retry_after_sec) {
+    *retry_after_sec = rctx.retry_after_sec;
+  }
   return 1;
 }
 

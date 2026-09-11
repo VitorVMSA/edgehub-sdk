@@ -30,6 +30,12 @@ typedef struct {
     const char *source,
     const char *payload,
     void *ctx);
+  /** Check-in `downloads`; NULL = só log. */
+  void (*on_download)(
+    const char *asset_key,
+    const char *version,
+    const char *url,
+    const char *sum);
   void *user_ctx;
   uint8_t telemetry_manual_only;
   /** 0 = `EHC_TELEMETRY_BATCH_MAX`. Valor > 1 envia `readings[]`. */
@@ -48,7 +54,7 @@ ehc_readiness_t ehc_get_readiness(void);
 const char *ehc_readiness_name(ehc_readiness_t r);
 const char *ehc_not_ready_reason(void);
 
-#define EHC_LIB_VERSION "0.2.2"
+#define EHC_LIB_VERSION "0.2.3"
 
 #ifdef __cplusplus
 }

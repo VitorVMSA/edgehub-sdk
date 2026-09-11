@@ -31,3 +31,12 @@ int ehc_user_on_config_apply(
   (void)ctx;
   return 1;
 }
+
+void ehc_user_on_download(
+  const char *asset_key, const char *version, const char *url, const char *sum)
+{
+  (void)asset_key;
+  (void)version;
+  (void)url;
+  (void)sum;
+}

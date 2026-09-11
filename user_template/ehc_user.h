@@ -15,6 +15,8 @@ extern const ehc_checkin_key_t ehc_user_checkin_keys[];
 extern const size_t ehc_user_checkin_keys_count;
 int ehc_user_on_config_apply(
   const char *asset_key, const char *version, const char *source, const char *payload, void *ctx);
+void ehc_user_on_download(
+  const char *asset_key, const char *version, const char *url, const char *sum);
 
 #ifdef __cplusplus
 }

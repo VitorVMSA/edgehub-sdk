@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.3 — 2026-09-11
+
+- `ehc_user_t.on_download`: callback de check-in `downloads` (OTA). NULL = só log.
+- `EHC_CTX_ATTR`: `g_ehc` em PSRAM via `ehc_user_config.h` (sem patch em `ehc_core.c`).
+- Port ESP32: uma repetição se o transporte falhar; contexto HTTP na stack.
+- `ehc_lock` reentrante; `ehc_tel_set_*` toma o lock (seguro entre tasks e a partir de callbacks).
+- Requer **edgehub-device-sdk ≥ 1.2.3**.
+
 ## 0.2.2 — 2026-09-11
 
 - Port ESP32: POST via `open`/`write`/`fetch_headers`/`read` para não descartar HTTP 401 (EdgeHub usa 401 de aplicação, sem `WWW-Authenticate`). Lê `Retry-After` no event de header.

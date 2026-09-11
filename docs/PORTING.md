@@ -8,7 +8,7 @@ O HAL está em `include/edgehub_client/ehc_port.h`. Implemente:
 | `storage_read` / `storage_write` | blobs opacos. Segredo HMAC em `ehc.hmac.secret` / `.prev`. Versões de asset em `ehc.asset.<key>`. **Não** mapear `eh.tel.q` — a fila do client é só RAM. |
 | `now_ms` | relógio monotónico ou wall-clock em milissegundos. |
 | `log` | opcional |
-| `lock` / `unlock` | opcional; obrigatório se `ehc_tick` e HTTP/storage puderem correr em threads distintas |
+| `lock` / `unlock` | opcional; obrigatório se `ehc_tick` e HTTP/storage puderem correr em threads distintas. `ehc_lock` é reentrante (`lock_depth`): `ehc_tel_set_*` e `ehc_tel_reset` são seguros entre tasks e a partir de callbacks da lib (`on_config_apply`, `on_download`). |
 
 ## Linux (`port/linux`)
 
@@ -16,7 +16,11 @@ OpenSSL BIO com `SO_RCVTIMEO`/`SO_SNDTIMEO` (default 12 s). Storage = um ficheir
 
 ## ESP32 (`port/esp32`) — greenfield
 
-`esp_http_client` + `esp_crt_bundle_attach`. POST via `open`/`write`/`fetch_headers`/`read` (não `perform`) para o body de HTTP 401 de aplicação chegar ao SDK — o EdgeHub usa 401 sem `WWW-Authenticate`. Lê `Retry-After` no event de header. Sem keep-alive. NVS namespace `ehc` (chaves mapeadas para 15 caracteres via FNV-1a `k%08x`).
+`esp_http_client` + `esp_crt_bundle_attach`. POST via `open`/`write`/`fetch_headers`/`read` (não `perform`) para o body de HTTP 401 de aplicação chegar ao SDK — o EdgeHub usa 401 sem `WWW-Authenticate`. Lê `Retry-After` no event de header. Sem keep-alive. **Uma** repetição se o transporte falhar (RST); HTTP 4xx/5xx não dispara retry. Contexto de resposta na stack. NVS namespace `ehc` (chaves mapeadas para 15 caracteres via FNV-1a `k%08x`).
+
+`g_ehc` em PSRAM: `-DEHC_USER_CONFIG_HEADER` com `#define EHC_CTX_ATTR __attribute__((section(".ext_ram.bss")))` — não editar `ehc_core.c`.
+
+On-device: o primeiro POST após RST deve recuperar.
 
 **Regra dura:** I/O de NVS só em tasks com stack em **RAM interna**. Se a task do client corre em PSRAM, compile com `-DEHC_PORT_ESP32_STORAGE_WORKER=1` — o port despacha read/write para um worker interno.
 

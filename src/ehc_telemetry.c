@@ -193,47 +193,83 @@ static ehc_status_t set_str_idx(int idx, const char *value)
 
 ehc_status_t ehc_tel_set_num(const char *name, double value)
 {
-  return set_num_idx(ehc_metric_index(NULL, name), value);
+  ehc_status_t rc;
+  ehc_lock();
+  rc = set_num_idx(ehc_metric_index(NULL, name), value);
+  ehc_unlock();
+  return rc;
 }
 
 ehc_status_t ehc_tel_set_str(const char *name, const char *value)
 {
-  return set_str_idx(ehc_metric_index(NULL, name), value);
+  ehc_status_t rc;
+  ehc_lock();
+  rc = set_str_idx(ehc_metric_index(NULL, name), value);
+  ehc_unlock();
+  return rc;
 }
 
 ehc_status_t ehc_tel_set_bool(const char *name, int value)
 {
-  return set_bool_idx(ehc_metric_index(NULL, name), value);
+  ehc_status_t rc;
+  ehc_lock();
+  rc = set_bool_idx(ehc_metric_index(NULL, name), value);
+  ehc_unlock();
+  return rc;
 }
 
 ehc_status_t ehc_tel_set_num_in(const char *parent, const char *name, double value)
 {
-  return set_num_idx(ehc_metric_index(parent, name), value);
+  ehc_status_t rc;
+  ehc_lock();
+  rc = set_num_idx(ehc_metric_index(parent, name), value);
+  ehc_unlock();
+  return rc;
 }
 
 ehc_status_t ehc_tel_set_str_in(const char *parent, const char *name, const char *value)
 {
-  return set_str_idx(ehc_metric_index(parent, name), value);
+  ehc_status_t rc;
+  ehc_lock();
+  rc = set_str_idx(ehc_metric_index(parent, name), value);
+  ehc_unlock();
+  return rc;
 }
 
 ehc_status_t ehc_tel_set_bool_in(const char *parent, const char *name, int value)
 {
-  return set_bool_idx(ehc_metric_index(parent, name), value);
+  ehc_status_t rc;
+  ehc_lock();
+  rc = set_bool_idx(ehc_metric_index(parent, name), value);
+  ehc_unlock();
+  return rc;
 }
 
 ehc_status_t ehc_tel_set_num_at(const char *path, double value)
 {
-  return set_num_idx(ehc_metric_index_at(path), value);
+  ehc_status_t rc;
+  ehc_lock();
+  rc = set_num_idx(ehc_metric_index_at(path), value);
+  ehc_unlock();
+  return rc;
 }
 
 ehc_status_t ehc_tel_set_str_at(const char *path, const char *value)
 {
-  return set_str_idx(ehc_metric_index_at(path), value);
+  ehc_status_t rc;
+  ehc_lock();
+  rc = set_str_idx(ehc_metric_index_at(path), value);
+  ehc_unlock();
+  return rc;
 }
 
 ehc_status_t ehc_tel_set_bool_at(const char *path, int value)
 {
-  return set_bool_idx(ehc_metric_index_at(path), value);
+  ehc_status_t rc;
+  ehc_lock();
+  rc = set_bool_idx(ehc_metric_index_at(path), value);
+  ehc_unlock();
+  return rc;
 }
 
 static int leaf_ready(size_t idx, double *num, int *boolean, const char **str)

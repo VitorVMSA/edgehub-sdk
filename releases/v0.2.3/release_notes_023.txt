@@ -1,0 +1,32 @@
+Resumo
+Release v0.2.3 do EdgeHub Client SDK. OTA e PSRAM deixam de exigir patch em sdk/src/. Retry de transporte no port ESP32. ehc_tel_set_* toma lock reentrante. Requer edgehub-device-sdk ≥ 1.2.3 (ABI 2).
+
+on_download
+     * Sintoma: check-in downloads só geravam log; OTA no EcoCircuito patchava ehc_bridge.c.
+     * Fix: ehc_user_t.on_download; NULL = só log. Firmware: u->on_download = ehc_user_on_download.
+
+EHC_CTX_ATTR
+     * Sintoma: g_ehc em DRAM interna (boot OOM com pool grande).
+     * Fix: #define EHC_CTX_ATTR __attribute__((section(".ext_ram.bss"))) em ehc_user_config.h.
+
+Port ESP32
+     * Uma repetição se o transporte falhar (RST). HTTP 4xx/5xx não retry. Contexto de resposta na stack.
+
+Telemetria
+     * ehc_lock reentrante; ehc_tel_set_* seguro entre tasks e a partir de callbacks.
+
+Dependência
+     * edgehub-device-sdk ≥ 1.2.3 (ABI 2).
+
+Versão
+     * VERSION: 0.2.3
+     * EHC_LIB_VERSION: 0.2.3
+     * Tag: v0.2.3
+     * Data: 2026-09-11
+
+Consumo no firmware EcoCircuito
+     * Pasta: C:\workspace\ecocircuito\edgehub-client-sdk
+     * Sync: scripts\sync_edgehub_sources.ps1
+     * Ver SYNC.txt e MANIFEST.txt nesta pasta.
+
+Desde v0.2.2 (POST ESP32 401 / Retry-After).

@@ -4,11 +4,11 @@ Entrada para agentes neste repositório. Camada C99 portável sobre `edgehub-dev
 
 | Área | Caminho |
 |------|---------|
-| Versão | `VERSION` (`0.2.2`), `EHC_LIB_VERSION` em `include/edgehub_client/ehc.h` |
+| Versão | `VERSION` (`0.2.3`), `EHC_LIB_VERSION` em `include/edgehub_client/ehc.h` |
 | API | `include/edgehub_client/` |
 | Fontes | `src/` |
 | Port ESP32 | `port/esp32/` (POST `open/write/fetch_headers/read` — não descartar HTTP 401) |
-| Release | `releases/v0.2.2/` (`release_notes_022.txt`, `SYNC.txt`, `MANIFEST.txt`) |
+| Release | `releases/v0.2.3/` (`release_notes_023.txt`, `SYNC.txt`, `MANIFEST.txt`) |
 | Changelog | `CHANGELOG.md` |
 | Integração | `docs/INTEGRATION.md`, `docs/PORTING.md`, `docs/TESTING.md` |
 | Device SDK | irmão `../edgehub-device-sdk` |
@@ -18,9 +18,9 @@ Entrada para agentes neste repositório. Camada C99 portável sobre `edgehub-dev
 
 ```powershell
 .\scripts\test_host.ps1
-.\scripts\package_release.ps1 -Version 0.2.2
+.\scripts\package_release.ps1 -Version 0.2.3
 ```
 
-Após sync para o firmware, reaplicar patches EcoCircuito (não pertencem a esta lib): `g_ehc` PSRAM, `ehc_user_on_download`, fallback `config.apply`.
+Após sync para o firmware: `u->on_download = ehc_user_on_download`; `EHC_CTX_ATTR` em `ehc_user_config.h` (PSRAM). Reaplicar só o fallback `config.apply` em `ehc_commands.c`.
 
 Não commitar sem pedido explícito. Respostas ao utilizador: português.

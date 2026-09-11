@@ -2,7 +2,7 @@
 
 Copie `user_template/` para o firmware. Não ligue esses `.c` à biblioteca — cada binário traz as suas tabelas.
 
-Requer `edgehub-device-sdk` ≥ **1.2.3** (ABI 2). Client SDK **0.2.2**.
+Requer `edgehub-device-sdk` ≥ **1.2.3** (ABI 2). Client SDK **0.2.3**.
 
 ## 1. Config compile-time
 
@@ -15,6 +15,14 @@ Para aplicar limites custom na lib:
 ```
 
 e o include path do template. `ehc_init` recusa tabelas que excedam os limites (`EHC_ECONFIG`) e loga o elemento.
+
+`g_ehc` pode ir a PSRAM no firmware (pool de strings grande) sem patchar `ehc_core.c`:
+
+```
+#define EHC_CTX_ATTR __attribute__((section(".ext_ram.bss")))
+```
+
+em `ehc_user_config.h` (só `ESP_PLATFORM`). Sem o define, BSS normal.
 
 Payload JSON grande (EcoCircuito ~4 KiB): compile as **fontes** do device SDK com `-DEH_MAX_TELEMETRY_QUEUE=8` e `-DEH_MAX_TELEMETRY_QUEUE_VALUES=4096` (fila em `eh_client_t` ~33 KB). **`EH_MAX_BATCH_PAYLOAD` fica 64 KiB** — não descer para 32 KiB; o body de lote ~34 KB. Os defaults públicos do device SDK (16 / 768 / 64 KiB) **não** mudam. O `.a` pré-compilado com o default 768 **não** serve. `EHC_OBJECT_SCRATCH_BYTES` no template (256) também tem de acompanhar o JSON real — isso fica no glue do firmware.
 
@@ -81,6 +89,12 @@ EHC_KEY_ASSET("classifications"),
 ```
 
 `on_config_apply` corre no check-in; a versão só é gravada em `ehc.asset.<nome>` se o apply devolver sucesso.
+
+`on_download` corre no mesmo check-in para cada entrada em `downloads` (`version`, `downloadUrl`, `checksumSha256`). NULL = só log (sem OTA). Assinatura igual a `ehc_user_on_download` no firmware EcoCircuito:
+
+```c
+u.on_download = ehc_user_on_download;
+```
 
 ## 5. Comandos
 

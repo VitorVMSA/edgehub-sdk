@@ -7,7 +7,7 @@ Camada C99 portável por cima do [`edgehub-device-sdk`](https://github.com) **�
 - **Telemetria** — tabela estática, JSON aninhado, push, getters, fila (`enqueue`/`flush`) e lote `readings[]`
 - **Comandos** — dispatch por `commandKey`, argumentos tipados, `DEFER_AFTER_ACK`
 
-Versão: **0.2.2**. Sem `malloc` nesta camada (o batch de 64 KiB do device SDK continua opt-in). A fila de telemetria do client é só RAM — persistência de pacotes fica na aplicação. Notas e manifesto de sync: `releases/v0.2.2/`.
+Versão: **0.2.3**. Sem `malloc` nesta camada (o batch de 64 KiB do device SDK continua opt-in). A fila de telemetria do client é só RAM — persistência de pacotes fica na aplicação. Notas e manifesto de sync: `releases/v0.2.3/`.
 
 ## Layout
 
@@ -18,7 +18,7 @@ port/{esp32,linux,host_stub}/
 user_template/            copiar para o firmware
 examples/{linux_demo,esp32_demo}/
 tests/                    Unity + CTest
-releases/v0.2.2/          release_notes, SYNC, MANIFEST
+releases/v0.2.3/          release_notes, SYNC, MANIFEST
 ```
 
 O device SDK é um submodule em `third_party/edgehub-device-sdk` **ou** o irmão `../edgehub-device-sdk`. CMake procura os dois. `scripts/sync_device_sdk.ps1` cria a pasta local.

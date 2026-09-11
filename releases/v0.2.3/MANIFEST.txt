@@ -1,0 +1,15 @@
+# Ficheiros desta versão que o firmware EcoCircuito sincroniza
+# (análogo à tabela de partições do release de firmware)
+
+Origem (esta pasta = raiz do repo)                    Destino no firmware
+src/*                                                  components/edgehub_client/sdk/src/
+include/edgehub_client/                                components/edgehub_client/sdk/include/edgehub_client/
+port/esp32/*                                           components/edgehub_client/sdk/port/esp32/
+VERSION                                                components/edgehub_client/sdk/VERSION
+
+Não vai no sync (fica só neste repo)
+     tests/  examples/  docs/  user_template/  port/linux/  port/host_stub/  CHANGELOG.md
+
+Glue EcoCircuito (não é desta lib)
+     components/edgehub_client/edgehub_client.c
+     ehc_user_*.c  edgehub_apply.c  edgehub_storage.c

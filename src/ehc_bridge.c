@@ -72,8 +72,9 @@ void ehc_bridge_on_download(void *user_ctx, const char *asset_key, const char *v
 {
   (void)user_ctx;
   ehc_logf(EHC_LOG_INFO, "download offered %s v%s", asset_key ? asset_key : "", version ? version : "");
-  (void)url;
-  (void)sum;
+  if (g_ehc.user.on_download) {
+    g_ehc.user.on_download(asset_key, version, url, sum);
+  }
 }
 
 void ehc_bridge_on_configuration(

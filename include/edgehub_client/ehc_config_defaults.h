@@ -69,6 +69,10 @@
 #define EHC_IDENT_MAX 192
 #endif
 
+#ifndef EHC_CTX_ATTR
+#define EHC_CTX_ATTR
+#endif
+
 #define EHC_STATIC_ASSERT(cond, name) typedef char ehc_static_assert_##name[(cond) ? 1 : -1]
 
 EHC_STATIC_ASSERT(EHC_MAX_NESTING_DEPTH >= 1, nesting_depth);

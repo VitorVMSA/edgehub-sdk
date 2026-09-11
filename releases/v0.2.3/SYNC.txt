@@ -1,0 +1,28 @@
+Consumo no firmware EcoCircuito (não é flash USB)
+
+Pasta da lib
+     C:\workspace\ecocircuito\edgehub-client-sdk
+
+Sync para o firmware
+  powershell
+    Set-Location C:\workspace\ecocircuito\ecocircuito-maq_v3.0_refatorado
+    .\scripts\sync_edgehub_sources.ps1
+
+Destino
+     components\edgehub_client\sdk\src\
+     components\edgehub_client\sdk\include\edgehub_client\
+     components\edgehub_client\sdk\port\esp32\
+     components\edgehub_client\sdk\VERSION
+
+Requer
+     edgehub-device-sdk ≥ 1.2.3 (ABI 2), sincronizado no mesmo passo.
+
+Após o sync:
+     1. u->on_download = ehc_user_on_download em prv_fill_user; reverter o patch em ehc_bridge.c
+     2. EHC_CTX_ATTR em ehc_user_config.h (PSRAM); reverter o #if ESP_PLATFORM em ehc_core.c
+     3. Reaplicar só o fallback JSON '{' → config.apply — ehc_commands.c
+     4. Opcional: retirar o retry de prv_http_wrap (o port já retry uma vez)
+
+Validação
+     Boot: client=0.2.3 abi=2
+     Testes host: .\scripts\test_host.ps1
