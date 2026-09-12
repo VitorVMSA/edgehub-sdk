@@ -61,7 +61,7 @@ void edgehub_loop(uint64_t now_ms) {
 }
 ```
 
-`ts` da telemetria: se o firmware não chamar `eh_client_set_telemetry_ts`, a lib preenche ISO-8601 UTC a partir de `now_ms` (body e HMAC).
+`ts` da telemetria: se o firmware não chamar `eh_client_set_telemetry_ts`, a lib preenche ISO-8601 UTC a partir de `now_ms` (body e HMAC). **`now_ms` tem de ser epoch Unix** (milissegundos). Relógio de uptime (`esp_timer` desde o boot) produz `ts` 1970 → o servidor rejeita com `TELEMETRY_INVALID_TS` mesmo com HMAC correcto. O mesmo vale para `eh_poll_downlink`. Tests host podem usar `now_ms` sintético pequeno.
 
 Lote / fila offline: `cfg.telemetry_batch_max` (0/1 = corpo legado `ts`/`values`; >1 envia `readings[]`). `eh_client_enqueue_reading` + `eh_client_flush_telemetry` drenam a fila; falha HTTP **não** descarta a amostra. `eh_client_telemetry_queue_clear` esvazia a fila RAM. Persistência `eh.tel.q` só corre se `cfg.telemetry_queue_persist != 0` (sem malloc do blob quando está a 0). Quem usa o device SDK sozinho e quer o comportamento offline de 1.2.1 deve pôr `telemetry_queue_persist = 1` — `memset` deixa o campo a 0. Body e HMAC de lote usam heap (`EH_MAX_BATCH_PAYLOAD`).
 

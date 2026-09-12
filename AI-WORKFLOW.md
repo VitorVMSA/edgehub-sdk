@@ -25,10 +25,10 @@ edgehub-client-sdk/
 │   └── system-patterns.md     # arquitetura resumida
 │
 ├── docs/                      # docs canónicas (índice: docs/README.md)
-├── device/                    # protocolo ABI 2 (1.2.4)
+├── device/                    # protocolo ABI 2 (1.2.6)
 ├── include/  src/             # camada produto
 ├── port/                      # HAL por alvo
-└── releases/v0.3.0/
+└── releases/v0.3.2/
 ```
 
 ---

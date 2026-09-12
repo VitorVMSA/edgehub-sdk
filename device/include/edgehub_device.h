@@ -7,7 +7,7 @@
 /** Semantic version of edgehub-device-sdk (must match linked .a). */
 #define EH_LIB_VERSION_MAJOR 1
 #define EH_LIB_VERSION_MINOR 2
-#define EH_LIB_VERSION_PATCH 5
+#define EH_LIB_VERSION_PATCH 6
 #define EH_LIB_ABI_VERSION   2
 
 #define EH_LIB_VERSION_STRINGIFY_(x) #x

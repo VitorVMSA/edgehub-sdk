@@ -333,22 +333,29 @@ eh_status_t eh_poll_downlink(eh_client_t *cli, uint64_t now_ms) {
   char ts[EH_MAX_TS];
   char body[384];
   char canonical[512];
-  uint8_t resp[EH_MAX_RESPONSE];
+  uint8_t *resp = NULL;
   size_t body_len = 0;
   size_t resp_len = 0;
   int http_status = 0;
   uint32_t retry_after_sec = 0;
-  eh_status_t rc;
+  eh_status_t rc = EH_ERR_IO;
   int http_ok;
+  enum { EH_POLL_RESP = 2048 };
 
   if (!cli || (!cli->cb.http_post && !cli->cb.http_post_ex)) return EH_ERR_INVALID_ARG;
   if (!cli->has_secret_current) return EH_ERR_AUTH;
 
+  resp = (uint8_t *)malloc(EH_POLL_RESP);
+  if (!resp) {
+    eh_logf(cli, EH_LOG_WARN, "downlink_poll_oom");
+    return EH_ERR_IO;
+  }
+
   rc = build_telemetry_url(cli, url, sizeof(url));
-  if (rc != EH_OK) return rc;
+  if (rc != EH_OK) goto done;
   eh_format_iso8601_utc(now_ms, ts, sizeof(ts));
   rc = build_telemetry_body(cli, ts, "{}", body, sizeof(body), &body_len);
-  if (rc != EH_OK) return rc;
+  if (rc != EH_OK) goto done;
   snprintf(
     canonical, sizeof(canonical),
     "{\"deviceUid\":\"%s\",\"alias\":\"\",\"ts\":\"%s\",\"values\":{}}",
@@ -356,23 +363,43 @@ eh_status_t eh_poll_downlink(eh_client_t *cli, uint64_t now_ms) {
     ts[0] ? ts : ""
   );
 
+  {
+    char poll_msg[56];
+    char short_ts[25];
+    size_t n = 0;
+    while (ts[n] && n < sizeof(short_ts) - 1) {
+      short_ts[n] = ts[n];
+      n++;
+    }
+    short_ts[n] = '\0';
+    snprintf(poll_msg, sizeof(poll_msg), "downlink_poll ts=%s", short_ts[0] ? short_ts : "?");
+    eh_logf(cli, EH_LOG_INFO, poll_msg);
+  }
   http_ok = eh_client_http_post_hmac(
     cli, url, canonical, 1, (const uint8_t *)body, body_len,
-    resp, sizeof(resp), &resp_len, &http_status, &retry_after_sec
+    resp, EH_POLL_RESP, &resp_len, &http_status, &retry_after_sec
   );
-  if (resp_len >= sizeof(resp)) resp_len = sizeof(resp) - 1;
+  if (resp_len >= EH_POLL_RESP) resp_len = EH_POLL_RESP - 1;
   resp[resp_len] = '\0';
 
   if (!http_ok || http_status < 200 || http_status > 299) {
+    char fail_msg[48];
     eh_client_note_http_retry(cli, http_status, retry_after_sec);
     if (eh_telemetry_response_requires_credential_reprovision(http_status, (const char *)resp)) {
       cli->needs_credential_reprovision = 1;
       eh_logf(cli, EH_LOG_WARN, "telemetry_credential_reprovision_required");
     }
-    return EH_ERR_HTTP;
+    snprintf(fail_msg, sizeof(fail_msg), "downlink_poll_fail http=%d", http_status);
+    eh_logf(cli, EH_LOG_WARN, fail_msg);
+    rc = EH_ERR_HTTP;
+    goto done;
   }
 
   eh_parse_pending_commands(cli, (const char *)resp);
   eh_logf(cli, EH_LOG_INFO, "downlink_poll_ok");
-  return EH_OK;
+  rc = EH_OK;
+
+done:
+  free(resp);
+  return rc;
 }

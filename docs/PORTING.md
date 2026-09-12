@@ -6,7 +6,7 @@ O HAL está em `include/edgehub_client/ehc_port.h`. Implemente:
 |---|---|
 | `http_post` | **nonzero = transporte OK**, mesmo em HTTP 4xx/5xx. Preencha `http_status` e `retry_after_sec` quando o servidor enviar `Retry-After` (não só em 429). Use esta variante (`http_post_ex` no device SDK). **Não há `http_get` no HAL:** o GET de `downloadUrl` (OTA) fica em `on_download` na aplicação. |
 | `storage_read` / `storage_write` | blobs opacos. Segredo HMAC em `ehc.hmac.secret` / `.prev`. Versões de asset em `ehc.asset.<key>`. **Não** mapear `eh.tel.q` — a fila do client é só RAM. |
-| `now_ms` | relógio monotónico ou wall-clock em milissegundos. |
+| `now_ms` | milissegundos. **Ingest** (`ts` ISO-8601 auto-preenchido, HMAC, `expiresAt`) exige epoch Unix. Relógio sintético/monotónico só é válido em testes host. ESP32: `gettimeofday`; SNTP é firmware, não desta lib. |
 | `log` | opcional |
 | `lock` / `unlock` | opcional; obrigatório se `ehc_tick` e HTTP/storage puderem correr em threads distintas. `ehc_lock` é reentrante (`lock_depth`): `ehc_tel_set_*` e `ehc_tel_reset` são seguros entre tasks e a partir de callbacks da lib (`on_config_apply`, `on_download`). |
 
@@ -26,13 +26,17 @@ No MCU: copiar `port/embedded/ehc_port_embedded.c` e substituir HTTPS, flash e m
 
 `esp_http_client` + `esp_crt_bundle_attach`. POST via `open`/`write`/`fetch_headers`/`read` (não `perform`) para o body de HTTP 401 de aplicação chegar ao SDK — o EdgeHub usa 401 sem `WWW-Authenticate`. Lê `Retry-After` no event de header. Sem keep-alive. **Uma** repetição se o transporte falhar (RST); HTTP 4xx/5xx não dispara retry. Contexto de resposta na stack. NVS namespace `ehc` (chaves mapeadas para 15 caracteres via FNV-1a `k%08x`).
 
-`g_ehc` em PSRAM: `-DEHC_USER_CONFIG_HEADER` com `#define EHC_CTX_ATTR __attribute__((section(".ext_ram.bss")))` — não editar `ehc_core.c`.
+`g_ehc` em PSRAM: `-DEHC_USER_CONFIG_HEADER` com `#define EHC_CTX_ATTR __attribute__((section(".ext_ram.bss")))` — não editar `ehc_core.c`. Sem PSRAM (WROOM 4 MB): não definir `EHC_CTX_ATTR`.
+
+`now_ms` (`esp_now`): `gettimeofday` (epoch Unix). Fallback `esp_timer` só se `gettimeofday` falhar. No init: `TZ=UTC0`. Se o relógio ainda for < 2020, o primeiro POST lê o cabeçalho HTTP `Date` (RFC1123) e chama `settimeofday`. **SNTP (`pool.ntp.org`) é do firmware**, não do port. Sem epoch Unix o ingest assina `ts` 1970 → HTTP 401 `TELEMETRY_INVALID_TS` com HMAC válido.
+
+Diagnóstico: `ehc_port_esp32_last_http_status` / `last_http_snip` / `last_http_op` (`checkin` \| `telemetry` \| `executed` \| `issue`) / `last_cmd` (último `pending_cmd=`).
 
 On-device: o primeiro POST após RST deve recuperar.
 
 **Regra dura:** I/O de NVS só em tasks com stack em **RAM interna**. Se a task do client corre em PSRAM, compile com `-DEHC_PORT_ESP32_STORAGE_WORKER=1` — o port despacha read/write para um worker interno.
 
-Compile as **fontes** de `device/` **1.2.4** (já sem `vendor/cjson` nos `INCLUDE_DIRS`). O `.a` prebuilt com `EH_MAX_TELEMETRY_QUEUE_VALUES=768` **não** serve para payloads maiores — use `-DEH_MAX_TELEMETRY_QUEUE_VALUES=4096` (e `-DEH_MAX_TELEMETRY_QUEUE=8`) no mesmo compile que o header. `EH_MAX_BATCH_PAYLOAD` permanece 64 KiB. No slave, `EH_MAX_TELEMETRY_QUEUE=1` e `disable_telemetry=1`.
+Compile as **fontes** de `device/` **1.2.6** (já sem `vendor/cjson` nos `INCLUDE_DIRS`). O `.a` prebuilt com `EH_MAX_TELEMETRY_QUEUE_VALUES=768` **não** serve para payloads maiores — use `-DEH_MAX_TELEMETRY_QUEUE_VALUES=4096` (e `-DEH_MAX_TELEMETRY_QUEUE=8`) no mesmo compile que o header. `EH_MAX_BATCH_PAYLOAD` permanece 64 KiB. No slave, `EH_MAX_TELEMETRY_QUEUE=1` e `disable_telemetry=1`. Check-in/issue/poll no device usam `malloc` pequeno (não buffers de 8–12 KB na stack da task MDM).
 
 ## Storage legado (EcoCircuito já provisionado)
 

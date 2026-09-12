@@ -30,7 +30,7 @@ if(NOT EHC_DEVICE_SDK_PREBUILT)
   if(NOT EXISTS "${EHC_DEVICE_SDK_ROOT}/CMakeLists.txt")
     message(FATAL_ERROR
       "edgehub-device-sdk not found at EHC_DEVICE_SDK_ROOT=${EHC_DEVICE_SDK_ROOT} "
-      "(expected ${EHC_ROOT}/device, ABI 2 / 1.2.4).")
+      "(expected ${EHC_ROOT}/device, ABI 2 / 1.2.6).")
   endif()
   if(NOT EHC_TEST_DEVICE_SDK)
     set(EH_BUILD_TESTS OFF CACHE BOOL "Build device SDK Unity tests")

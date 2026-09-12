@@ -81,3 +81,23 @@
 **Fix:** `eh_json_print_number` (shortest round-trip + regras ES `-6<n≤21`) em `eh_values_add_num`. Testes `eh_test_values_writer` + `eh_test_hmac_golden` com `1e-5`.
 
 **Evitar:** patch só no glue EcoCircuito; alterar o contrato do servidor; usar `%.15g`/`%.17g` no body canónico.
+
+---
+
+### 2026-09 | ESP32 | `now_ms` e `TELEMETRY_INVALID_TS`
+
+**Causa:** o ingest preenche `ts` ISO-8601 a partir de `now_ms`. O port ESP32 usava `esp_timer` (uptime). HMAC do body 1970 estava correcto; o servidor rejeitava `Invalid ts value`. Um segundo 1970 no mesmo `ehc_tick`: snapshot de `now` **antes** do check-in, poll **depois** do HTTP `Date`.
+
+**Fix:** `gettimeofday` no port; `TZ=UTC0`; bootstrap HTTP `Date` se relógio < 2020. SNTP no firmware (não nesta lib). `ehc_tick` re-lê `ehc_now()` imediatamente antes do poll. A lib **não** recusa `now_ms` < 2020 (testes host usam relógio sintético).
+
+**Evitar:** `esp_timer` como `now_ms` de ingest; recusar epoch pequeno em `eh_poll_downlink`; pôr SNTP dentro da `.a`.
+
+---
+
+### 2026-09 | ESP32 | Heap check-in + `credential/issue`
+
+**Causa:** buffers de check-in (~12 KB) ainda vivos quando o issue alocava ~16 KB na mesma task MDM (~24 KB stack, WROOM sem PSRAM). HMAC/issue falhava com SSH ligado.
+
+**Fix:** stash de `identityChallenge` em wrap 512 B, `free` dos 12 KB, **depois** issue. Issue: malloc 512/768/1536. Poll: malloc 2048 em vez de `uint8_t resp[EH_MAX_RESPONSE]` (8192) na stack.
+
+**Evitar:** sobrepor `EH_MAX_PAYLOAD`/`EH_MAX_RESPONSE` na stack da task MDM; deixar buffers de check-in vivos durante o issue.

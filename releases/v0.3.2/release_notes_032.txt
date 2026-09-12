@@ -1,0 +1,36 @@
+Resumo
+Release v0.3.2. Parte da tag GitHub v0.3.1 (HMAC JSON.stringify) e junta os ajustes ESP32 do slave EcoCircuito: relógio Unix, heap de check-in/issue/poll no WROOM, ehc_poll_downlink(). Device 1.2.6, ABI 2 inalterada.
+
+Relógio
+     * Sintoma: HMAC válido + HTTP 401 TELEMETRY_INVALID_TS (ts 1970).
+     * Port ESP32: gettimeofday; TZ=UTC0; bootstrap HTTP Date se relógio < 2020.
+     * SNTP fica no firmware, não nesta lib.
+     * ehc_tick re-lê now_ms imediatamente antes do poll.
+     * A lib não recusa now_ms sintético (testes host).
+
+Heap (device 1.2.6)
+     * Check-in: stash identityChallenge 512 B, free dos 12 KB, depois credential/issue.
+     * Issue: malloc 512/768/1536.
+     * Poll: malloc 2048 (não EH_MAX_RESPONSE na stack).
+
+API
+     * ehc_poll_downlink() / ehc_poll_commands_enabled()
+     * Port: last_http_op / last_cmd
+
+Consumo slave EcoCircuito
+     * git submodule em third_party/edgehub-client-sdk (não components/)
+     * disable_telemetry=1 poll_commands=1 enable_identity_credential_issue=1
+
+Versão
+     * VERSION: 0.3.2 (umbrella)
+     * EHC_LIB_VERSION: 0.3.2
+     * device/: 1.2.6 / ABI 2
+     * Data: 2026-09-13
+
+Validação
+     * Boot: lib=1.2.6 client=0.3.2 abi=2
+     * .\scripts\test_host.ps1 -DeviceSdk
+     * Campo WROOM: checkin_ok + downlink_poll_ok
+     * Ingest: lote com |x|<1e-4 não deve devolver 401 CREDENTIAL_INVALID (herdado de v0.3.1)
+
+Desde v0.3.1 (números JSON = JSON.stringify).

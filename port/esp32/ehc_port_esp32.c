@@ -1,8 +1,11 @@
 #include "ehc_port_esp32.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <sys/time.h>
+#include <time.h>
 
 #include "esp_crt_bundle.h"
 #include "esp_http_client.h"
@@ -13,6 +16,9 @@
 #include "freertos/task.h"
 #include "nvs.h"
 #include "nvs_flash.h"
+
+/** Abaixo disto o relógio ainda é boot/1970; o ingest rejeita o `ts`. */
+#define EHC_UNIX_MIN_SEC 1600000000L
 
 #ifndef EHC_PORT_ESP32_STORAGE_WORKER
 #define EHC_PORT_ESP32_STORAGE_WORKER 0
@@ -39,10 +45,76 @@ typedef struct {
 } ehc_nvs_job_t;
 
 static SemaphoreHandle_t s_mu;
+static volatile int s_last_http;
+static char s_last_snip[160];
+static char s_last_op[16];
+static char s_last_cmd[48];
 #if EHC_PORT_ESP32_STORAGE_WORKER
 static QueueHandle_t s_nvs_q;
 static TaskHandle_t s_nvs_task;
 #endif
+
+static int clock_is_unix(void)
+{
+  struct timeval tv;
+  return gettimeofday(&tv, NULL) == 0 && tv.tv_sec >= EHC_UNIX_MIN_SEC;
+}
+
+static void maybe_set_time_from_http_date(const char *value)
+{
+  static const char *k_mon[] = {
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  };
+  struct tm tm;
+  struct timeval tv;
+  time_t t;
+  int d = 0;
+  int year = 0;
+  int hh = 0;
+  int mm = 0;
+  int ss = 0;
+  int month = -1;
+  int i;
+  char mon[8];
+  const char *p;
+
+  if (!value || clock_is_unix()) {
+    return;
+  }
+  p = strchr(value, ',');
+  p = p ? p + 1 : value;
+  memset(&tm, 0, sizeof(tm));
+  memset(mon, 0, sizeof(mon));
+  if (sscanf(p, " %d %3s %d %d:%d:%d", &d, mon, &year, &hh, &mm, &ss) != 6) {
+    return;
+  }
+  for (i = 0; i < 12; i++) {
+    if (strncmp(mon, k_mon[i], 3) == 0) {
+      month = i;
+      break;
+    }
+  }
+  if (month < 0 || d < 1 || d > 31 || year < 2020) {
+    return;
+  }
+  tm.tm_mday = d;
+  tm.tm_mon = month;
+  tm.tm_year = year - 1900;
+  tm.tm_hour = hh;
+  tm.tm_min = mm;
+  tm.tm_sec = ss;
+  tm.tm_isdst = 0;
+  t = mktime(&tm);
+  if (t < EHC_UNIX_MIN_SEC) {
+    return;
+  }
+  tv.tv_sec = t;
+  tv.tv_usec = 0;
+  if (settimeofday(&tv, NULL) == 0) {
+    ESP_LOGI(TAG, "clock from HTTP Date unix=%ld", (long)t);
+  }
+}
 
 static uint32_t fnv1a(const char *s)
 {
@@ -59,12 +131,34 @@ static void nvs_key_of(const char *key, char *out, size_t cap)
   snprintf(out, cap, "k%08x", (unsigned)fnv1a(key ? key : ""));
 }
 
+static void note_http_op(const char *url)
+{
+  const char *op = "http";
+  if (!url || !url[0]) {
+    s_last_op[0] = '\0';
+    return;
+  }
+  if (strstr(url, "command-executions")) {
+    op = "executed";
+  } else if (strstr(url, "/checkin")) {
+    op = "checkin";
+  } else if (strstr(url, "/telemetry")) {
+    op = "telemetry";
+  } else if (strstr(url, "credential") || strstr(url, "/issue")) {
+    op = "issue";
+  }
+  strncpy(s_last_op, op, sizeof(s_last_op) - 1);
+  s_last_op[sizeof(s_last_op) - 1] = '\0';
+}
+
 static esp_err_t http_event(esp_http_client_event_t *evt)
 {
   ehc_esp_resp_t *ctx = (ehc_esp_resp_t *)evt->user_data;
   if (evt->event_id == HTTP_EVENT_ON_HEADER && ctx && evt->header_key && evt->header_value) {
     if (strcasecmp(evt->header_key, "Retry-After") == 0) {
       ctx->retry_after_sec = (uint32_t)atoi(evt->header_value);
+    } else if (strcasecmp(evt->header_key, "Date") == 0) {
+      maybe_set_time_from_http_date(evt->header_value);
     }
   }
   return ESP_OK;
@@ -204,6 +298,7 @@ static int esp_http(
   if (!url || !resp || resp_cap == 0 || !http_status) {
     return 0;
   }
+  note_http_op(url);
 
   rctx.buf = resp;
   rctx.cap = resp_cap;
@@ -215,6 +310,8 @@ static int esp_http(
     ok = esp_http_once(url, headers, body, body_len, &rctx, &status);
   }
   if (!ok) {
+    s_last_http = 0;
+    s_last_snip[0] = '\0';
     return 0;
   }
   *http_status = status;
@@ -224,7 +321,52 @@ static int esp_http(
   if (retry_after_sec) {
     *retry_after_sec = rctx.retry_after_sec;
   }
+  s_last_http = status;
+  {
+    size_t n = rctx.len < sizeof(s_last_snip) - 1 ? rctx.len : sizeof(s_last_snip) - 1;
+    if (n > 0 && rctx.buf) {
+      memcpy(s_last_snip, rctx.buf, n);
+      s_last_snip[n] = '\0';
+    } else {
+      s_last_snip[0] = '\0';
+    }
+  }
+  if (status >= 400) {
+    ESP_LOGW(TAG, "http=%d %s", status, s_last_snip);
+  }
   return 1;
+}
+
+int ehc_port_esp32_last_http_status(void)
+{
+  return s_last_http;
+}
+
+void ehc_port_esp32_last_http_snip(char *out, size_t cap)
+{
+  if (!out || cap == 0) {
+    return;
+  }
+  strncpy(out, s_last_snip, cap - 1);
+  out[cap - 1] = '\0';
+}
+
+void ehc_port_esp32_last_http_op(char *out, size_t cap)
+{
+  if (!out || cap == 0) {
+    return;
+  }
+  strncpy(out, s_last_op, cap - 1);
+  out[cap - 1] = '\0';
+}
+
+void ehc_port_esp32_last_cmd(char *out, size_t cap)
+{
+  if (!out || cap == 0) {
+    return;
+  }
+  strncpy(out, s_last_cmd, cap - 1);
+  out[cap - 1] = '\0';
 }
 
 static int nvs_read_impl(const char *key, uint8_t *buf, size_t cap, size_t *len)
@@ -337,13 +479,21 @@ static int esp_store_write(void *ctx, const char *key, const uint8_t *buf, size_
 
 static uint64_t esp_now(void *ctx)
 {
+  struct timeval tv;
   (void)ctx;
+  if (gettimeofday(&tv, NULL) == 0 && tv.tv_sec > 0) {
+    return (uint64_t)tv.tv_sec * 1000ULL + (uint64_t)(tv.tv_usec / 1000);
+  }
   return (uint64_t)(esp_timer_get_time() / 1000);
 }
 
 static void esp_log_cb(void *ctx, ehc_log_level_t lvl, const char *msg)
 {
   (void)ctx;
+  if (msg && strncmp(msg, "pending_cmd=", 12) == 0) {
+    strncpy(s_last_cmd, msg + 12, sizeof(s_last_cmd) - 1);
+    s_last_cmd[sizeof(s_last_cmd) - 1] = '\0';
+  }
   if (lvl == EHC_LOG_ERROR) {
     ESP_LOGE(TAG, "%s", msg ? msg : "");
   } else if (lvl == EHC_LOG_WARN) {
@@ -377,6 +527,8 @@ int ehc_port_esp32_init(ehc_port_t *out)
     return 0;
   }
   (void)nvs_flash_init();
+  setenv("TZ", "UTC0", 1);
+  tzset();
   if (!s_mu) {
     s_mu = xSemaphoreCreateMutex();
   }

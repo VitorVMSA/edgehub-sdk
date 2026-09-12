@@ -1,5 +1,6 @@
 #include "eh_commands.h"
 
+#include <stdio.h>
 #include <string.h>
 #include "eh_command_executed.h"
 #include "eh_json.h"
@@ -96,7 +97,18 @@ static eh_status_t parse_command_object(eh_client_t *cli, const char *obj_json) 
   strncpy(slot->payload_json, payload, EH_MAX_COMMAND_PAYLOAD - 1);
   slot->payload_json[EH_MAX_COMMAND_PAYLOAD - 1] = '\0';
   cli->pending_command_count++;
-  eh_logf(cli, EH_LOG_DEBUG, "pending_command_received");
+  {
+    char msg[64];
+    char short_key[48];
+    size_t n = 0;
+    while (cmd_key[n] && n < sizeof(short_key) - 1) {
+      short_key[n] = cmd_key[n];
+      n++;
+    }
+    short_key[n] = '\0';
+    snprintf(msg, sizeof(msg), "pending_cmd=%s", short_key[0] ? short_key : "?");
+    eh_logf(cli, EH_LOG_INFO, msg);
+  }
   return EH_OK;
 }
 

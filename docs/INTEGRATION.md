@@ -2,18 +2,18 @@
 
 Copie `user_template/` para o firmware. Não ligue esses `.c` à biblioteca — cada binário traz as suas tabelas.
 
-Umbrella **0.3.1**. Protocolo in-tree: `device/` = edgehub-device-sdk **1.2.5** (ABI 2). Boot esperado: `lib=1.2.5 client=0.3.1 abi=2`.
+Umbrella **0.3.2**. Protocolo in-tree: `device/` = edgehub-device-sdk **1.2.6** (ABI 2). Boot esperado: `lib=1.2.6 client=0.3.2 abi=2`.
 
-Um submodule para todos os firmwares (mapa em `releases/v0.3.1/SYNC.txt`):
+Um submodule para todos os firmwares (mapa em `releases/v0.3.2/SYNC.txt`). No slave ESP-IDF **não** usar `components/` (o `project()` host desta lib parte o configure):
 
 ```
-git submodule add git@github.com-vmsatech:VitorVMSA/edgehub-client-sdk.git components/edgehub_sdk
+git submodule add git@github.com-vmsatech:VitorVMSA/edgehub-client-sdk.git third_party/edgehub-client-sdk
 ```
 
-CMake do firmware (não alterado nesta entrega):
+CMake do firmware:
 
-- Device: `EH_SDK_DIR` = `../edgehub_sdk/device` (hoje `sdk/` no EcoCircuito).
-- Client: fontes `../edgehub_sdk/src`, `include`, `port/esp32`.
+- Device: `EH_SDK_DIR` = `../edgehub_sdk/device` (ou `third_party/edgehub-client-sdk/device`).
+- Client: fontes `src`, `include`, `port/esp32`.
 - Overlay EcoCircuito inalterado (`overlay/` / fallback `config.apply`).
 
 ## 1. Config compile-time
@@ -58,7 +58,7 @@ u.identity_pkcs8 = (ehc_identity_source_t)EHC_IDENT_STORE("identity_pkcs8");
 /* ou u.enable_identity_credential_issue = 1; */
 ```
 
-HMAC: o servidor aceita o secret antigo até `rotateGraceUntil`. Após 401 `*_CREDENTIAL_INVALID` a lib faz **um** retry com `secret_previous`. `expiresAt` do issue é parseado; no tick, depois dessa data, arma `needs_credential_reprovision` (check-in sem HMAC, como no 401 EXPIRED). A comparação usa `now_ms` do port: precisa de wall-clock Unix (Linux `CLOCK_REALTIME`). Relógio monotónico (ESP32 `esp_timer`) não dispara este caminho — a recuperação continua a ser o 401 EXPIRED.
+HMAC: o servidor aceita o secret antigo até `rotateGraceUntil`. Após 401 `*_CREDENTIAL_INVALID` a lib faz **um** retry com `secret_previous`. `expiresAt` do issue é parseado; no tick, depois dessa data, arma `needs_credential_reprovision` (check-in sem HMAC, como no 401 EXPIRED). A comparação usa `now_ms` do port: precisa de wall-clock Unix. O port ESP32 usa `gettimeofday` (epoch); SNTP fica no firmware. Relógio só `esp_timer` (uptime) não dispara este caminho — a recuperação continua a ser o 401 EXPIRED.
 
 ## 3. Telemetria
 
@@ -148,6 +148,8 @@ u.poll_commands = 1; /* POST {deviceUid, ts, values:{}} a cada EHC_COMMAND_POLL_
 
 `memset` 0 = off. Não liga `enable_telemetry` por baixo (o collect de métricas não corre).
 
+Poll imediato (além do intervalo no tick): `ehc_poll_downlink()`. O tick **volta a ler** `ehc_now()` imediatamente antes do POST — o check-in do mesmo ciclo pode ter sincronizado o relógio via HTTP `Date`. `ehc_poll_commands_enabled()` reflecte `user.poll_commands` em runtime.
+
 ## 6. Loop
 
 ```c
@@ -165,6 +167,7 @@ Wrappers runtime (lock + `eh_client_init` se ainda não houver). **Não** chamar
 ehc_set_checkin_interval(ms);
 ehc_set_telemetry_batch_max(n);
 ehc_set_telemetry_interval(ms); /* no-op útil se telemetry_manual_only */
+ehc_poll_downlink(); /* slave: POST {values:{}} já, se HMAC existir */
 ehc_device_status_t st;
 ehc_get_device_status(&st); /* provisioning, next_checkin, backoff, pending_command_count */
 ```

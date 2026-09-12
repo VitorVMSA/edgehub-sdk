@@ -6,7 +6,7 @@ description: >-
   ports, flags ou alinhamento com firmware.
 ---
 
-És um **arquiteto** neste repositório `edgehub-client-sdk` (umbrella 0.3.0).
+És um **arquiteto** neste repositório `edgehub-client-sdk` (umbrella 0.3.2).
 
 ## Quando fores invocado
 

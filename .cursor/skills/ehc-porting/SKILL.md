@@ -22,7 +22,7 @@ Preencher:
 
 - `http_post` — nonzero = transporte OK **incluindo HTTP 4xx/5xx**; preencher `http_status` e `Retry-After`
 - `storage_read` / `storage_write` — HMAC `ehc.hmac.secret` / `.prev`; assets `ehc.asset.*`; **não** persistir `eh.tel.q`
-- `now_ms` — obrigatório
+- `now_ms` — obrigatório. Ingest (`ts` / HMAC / `expiresAt`) = epoch Unix. ESP32: `gettimeofday` no port; SNTP no firmware. Não usar só `esp_timer`.
 - `log`, `lock`/`unlock` — opcionais (`lock` se tick e I/O em tasks distintas)
 
 API da app: `ehc_init` + `ehc_tick`. Tabelas em `user_template/` (não ligar esses `.c` à `.a`).
@@ -43,5 +43,6 @@ Não compilar dois `ed25519_randombytes_unsafe` no mesmo binário.
 - Não alterar ABI do device
 - Não meter fallback `config.apply` nem NVS legado EcoCircuito no port
 - Slave: `user.disable_telemetry = 1`, `metric_count = 0`; RAM via `EH_MAX_*` no CMake do firmware
+- ESP32 WROOM: não pôr esta lib sob `components/` (CMake host); SNTP fica no firmware
 
 Detalhe: `docs/PORTING.md`.

@@ -329,6 +329,11 @@ int ehc_is_initialized(void)
   return g_ehc.used ? 1 : 0;
 }
 
+int ehc_poll_commands_enabled(void)
+{
+  return (g_ehc.used && g_ehc.user.poll_commands) ? 1 : 0;
+}
+
 ehc_readiness_t ehc_get_readiness(void)
 {
   if (!g_ehc.used) {
@@ -393,6 +398,7 @@ ehc_status_t ehc_tick(void)
     if (interval == 0) {
       interval = 60000;
     }
+    now = ehc_now();
     if (eh_client_poll_downlink(&g_ehc.eh, now) != EH_OK && rc == EHC_OK) {
       rc = EHC_EIO;
     }
@@ -428,6 +434,27 @@ ehc_status_t ehc_force_checkin(void)
   if (rc == EHC_OK) {
     rc = (eh_client_force_checkin(&g_ehc.eh, ehc_now()) == EH_OK) ? EHC_OK : EHC_EIO;
     ehc_persist_secret_if_changed();
+  }
+  ehc_unlock();
+  return rc;
+}
+
+ehc_status_t ehc_poll_downlink(void)
+{
+  ehc_status_t rc;
+  if (!g_ehc.used) {
+    return EHC_EINVAL;
+  }
+  ehc_lock();
+  ehc_refresh_readiness();
+  rc = ehc_ensure_eh_client();
+  if (rc == EHC_OK) {
+    if (!g_ehc.eh.has_secret_current) {
+      rc = EHC_ENOTREADY;
+    } else {
+      rc = (eh_client_poll_downlink(&g_ehc.eh, ehc_now()) == EH_OK) ? EHC_OK : EHC_EIO;
+      ehc_run_deferred();
+    }
   }
   ehc_unlock();
   return rc;

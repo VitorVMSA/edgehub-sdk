@@ -2,7 +2,7 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidateSet("host", "esp32s3")]
     [string]$Target,
-    [string]$Version = "1.2.5"
+    [string]$Version = "1.2.6"
 )
 
 $ErrorActionPreference = "Stop"

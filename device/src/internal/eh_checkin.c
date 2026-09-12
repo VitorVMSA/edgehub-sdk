@@ -202,6 +202,7 @@ static eh_status_t parse_checkin_response(eh_client_t *cli, const char *resp) {
 eh_status_t eh_run_checkin(eh_client_t *cli) {
   char url[EH_MAX_URL + 128];
   char keys_sent[EH_MAX_CHECKIN_KEYS + 2];
+  char challenge_wrap[512];
   char *body = NULL;
   uint8_t *resp = NULL;
   size_t body_len = 0;
@@ -210,10 +211,13 @@ eh_status_t eh_run_checkin(eh_client_t *cli) {
   uint32_t retry_after_sec = 0;
   eh_status_t rc;
   int http_ok;
+  int have_challenge = 0;
+  uint8_t had_secret = 0;
 
   if (!cli || (!cli->cb.http_post && !cli->cb.http_post_ex)) return EH_ERR_INVALID_ARG;
   if (!cli->cfg.enable_checkin) return EH_OK;
 
+  challenge_wrap[0] = '\0';
   body = (char *)malloc(EH_MAX_PAYLOAD);
   resp = (uint8_t *)malloc(EH_MAX_RESPONSE);
   if (!body || !resp) {
@@ -232,6 +236,7 @@ eh_status_t eh_run_checkin(eh_client_t *cli) {
   rc = build_checkin_json(cli, body, EH_MAX_PAYLOAD, &body_len);
   if (rc != EH_OK) goto done;
 
+  had_secret = cli->has_secret_current;
   http_ok = eh_client_http_post_hmac(
       cli,
       url,
@@ -249,9 +254,15 @@ eh_status_t eh_run_checkin(eh_client_t *cli) {
   if (resp_len >= EH_MAX_RESPONSE - 1) {
     eh_logf(cli, EH_LOG_WARN, "checkin_response_truncated");
   }
+  if (http_ok && resp_len > 0) {
+    char ch_obj[384];
+    if (eh_find_json_raw_value((const char *)resp, "identityChallenge", ch_obj, sizeof(ch_obj))) {
+      int n = snprintf(challenge_wrap, sizeof(challenge_wrap), "{\"identityChallenge\":%s}", ch_obj);
+      have_challenge = (n > 0 && (size_t)n < sizeof(challenge_wrap));
+    }
+  }
   if (!http_ok || http_status < 200 || http_status > 299) {
     char fail_msg[48];
-    uint8_t had_secret = cli->has_secret_current;
     if (http_status == 401 &&
         eh_json_has_token((const char *)resp, "CHECKIN_DEVICE_IDENTITY_NOT_REGISTERED") &&
         retry_after_sec == 0) {
@@ -262,13 +273,8 @@ eh_status_t eh_run_checkin(eh_client_t *cli) {
       cli->needs_credential_reprovision = 1;
       eh_logf(cli, EH_LOG_WARN, "checkin_credential_reprovision_required");
     }
-    if (http_ok && resp_len > 0) {
-      eh_status_t issue_rc = eh_apply_identity_credential_issue_from_checkin(cli, (const char *)resp);
-      if (issue_rc != EH_OK) eh_logf(cli, EH_LOG_WARN, "identity_credential_issue_failed");
-      if (!had_secret && cli->has_secret_current) {
-        rc = EH_OK;
-        goto done;
-      }
+    if (http_status == 401 && !have_challenge) {
+      eh_logf(cli, EH_LOG_WARN, "checkin_401_without_identity_challenge");
     }
     snprintf(fail_msg, sizeof(fail_msg), "checkin_fail http=%d", http_status);
     eh_logf(cli, EH_LOG_WARN, fail_msg);
@@ -278,13 +284,19 @@ eh_status_t eh_run_checkin(eh_client_t *cli) {
   rc = parse_checkin_response(cli, (const char *)resp);
   if (rc == EH_OK) {
     eh_checkin_store_sent_keys(cli, keys_sent);
-    eh_status_t issue_rc = eh_apply_identity_credential_issue_from_checkin(cli, (const char *)resp);
-    if (issue_rc != EH_OK) eh_logf(cli, EH_LOG_WARN, "identity_credential_issue_failed");
     eh_logf(cli, EH_LOG_INFO, "checkin_ok");
   }
 
 done:
   free(body);
   free(resp);
+  if (have_challenge) {
+    eh_status_t issue_rc = eh_apply_identity_credential_issue_from_checkin(cli, challenge_wrap);
+    if (issue_rc != EH_OK) {
+      eh_logf(cli, EH_LOG_WARN, "identity_credential_issue_failed");
+    } else if (!had_secret && cli->has_secret_current) {
+      rc = EH_OK;
+    }
+  }
   return rc;
 }

@@ -71,4 +71,6 @@ alwaysApply: false
 | `enable_*` vs memset 0 | gotcha AGENTS + `docs/INTEGRATION.md` |
 | Três `enable_*=0` no device | `docs/INTEGRATION.md` + lessons |
 | HTTP 401 ESP32 | `ehc-ports.mdc` + `docs/PORTING.md` |
+| ESP32 `now_ms` 1970 / `TELEMETRY_INVALID_TS` | gotcha AGENTS + `docs/PORTING.md` + lessons |
+| Check-in+issue heap WROOM | `lessons-learned` + `docs/PORTING.md` |
 | Só o port muda | rule `ehc-ports` + skill `ehc-porting` |

@@ -62,9 +62,13 @@ typedef struct {
 ehc_status_t ehc_init(const ehc_port_t *port, const ehc_user_t *user);
 void ehc_shutdown(void);
 int ehc_is_initialized(void);
+/** 1 se o client está a fazer poll de `pendingCommands` (slave). */
+int ehc_poll_commands_enabled(void);
 
 ehc_status_t ehc_tick(void);
 ehc_status_t ehc_force_checkin(void);
+/** POST `{values:{}}` no ingest para puxar `pendingCommands` (slave `poll_commands`). */
+ehc_status_t ehc_poll_downlink(void);
 
 /** Intervalo de check-in (ms). `0` = default do device. Não chamar de `on_config_apply`. */
 ehc_status_t ehc_set_checkin_interval(uint32_t ms);
@@ -77,7 +81,7 @@ ehc_readiness_t ehc_get_readiness(void);
 const char *ehc_readiness_name(ehc_readiness_t r);
 const char *ehc_not_ready_reason(void);
 
-#define EHC_LIB_VERSION "0.3.1"
+#define EHC_LIB_VERSION "0.3.2"
 
 #ifdef __cplusplus
 }

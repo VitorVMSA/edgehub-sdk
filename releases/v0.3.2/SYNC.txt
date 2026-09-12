@@ -1,0 +1,32 @@
+Consumo no firmware EcoCircuito (não é flash USB)
+
+Pasta da lib
+     C:\workspace\ecocircuito\edgehub-client-sdk
+
+Submodule slave (ESP-IDF): third_party/, não components/
+  (o project() host desta lib parte o configure IDF)
+
+  git submodule add git@github.com-vmsatech:VitorVMSA/edgehub-client-sdk.git third_party/edgehub-client-sdk
+  git -C third_party/edgehub-client-sdk checkout --detach v0.3.2
+
+Master (mapa legado)
+  git submodule add git@github.com:VitorVMSA/edgehub-client-sdk.git libs/edgehub-client-sdk
+  git -C libs/edgehub-client-sdk checkout --detach v0.3.2
+
+CMake do firmware
+  Device:  fontes device/
+  Client:  fontes src, include, port/esp32
+  Overlay EcoCircuito inalterado (config.apply / NVS legado / SNTP)
+
+Slave
+  u.disable_telemetry = 1
+  u.poll_commands = 1
+  u.enable_identity_credential_issue = 1
+  metric_count = 0
+  EH_MAX_TELEMETRY_QUEUE=1 (CMake do firmware)
+  SNTP no firmware (wifi); now_ms = gettimeofday no port
+
+Validação
+     Boot: lib=1.2.6 client=0.3.2 abi=2
+     Testes host: .\scripts\test_host.ps1 -DeviceSdk
+     Ingest: lote com |x|<1e-4 não deve devolver 401 CREDENTIAL_INVALID

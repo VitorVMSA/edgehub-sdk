@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.6 — 2026-09-13
+
+- Check-in: extrai `identityChallenge` para um wrap de 512 B, faz `free` dos buffers de 12 KB e **só depois** `credential/issue` (WROOM sem PSRAM).
+- `exchange_identity_challenge`: malloc 512/768/1536 em vez de `EH_MAX_PAYLOAD`/`EH_MAX_RESPONSE` na stack. Logs `identity_seed_missing`, `credential_issue_fail http=`.
+- `eh_poll_downlink`: malloc 2048 para a resposta (não 8 KB na stack). Log INFO `downlink_poll ts=` / `pending_cmd=`.
+- 401 sem challenge: `checkin_401_without_identity_challenge`.
+- **ABI 2 unchanged.**
+
 ## 1.2.5 — 2026-09-13
 
 - `eh_values_add_num` imprime números como `JSON.stringify` (ECMA-262 NumberToString): decimal se `-6 < n ≤ 21`, senão científico sem zeros à esquerda no expoente (`1e-7`, `1e+21`). NaN/Inf → `null`; `-0` → `0`.

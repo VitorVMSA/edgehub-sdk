@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.2 — 2026-09-13
+
+- `ehc_poll_downlink()`: poll imediato de `pendingCommands` (além do intervalo em `ehc_tick`). `ehc_poll_commands_enabled()`.
+- `ehc_tick` volta a ler `now_ms` imediatamente antes do poll (o check-in pode ter sincronizado o relógio no mesmo tick).
+- Port ESP32: `now_ms` passa a `gettimeofday` (epoch Unix). Bootstrap do relógio via cabeçalho HTTP `Date` se ainda estiver em 1970. SNTP fica no firmware. Diagnóstico: `ehc_port_esp32_last_http_op` / `last_cmd`.
+- Device **1.2.6**: check-in liberta os buffers grandes **antes** de `credential/issue`; issue e poll usam malloc pequeno (não 8–12 KB na stack). Log `pending_cmd=`, `downlink_poll ts=`, `checkin_401_without_identity_challenge`. **ABI 2 inalterada.**
+
 ## 0.3.1 — 2026-09-13
 
 - Device SDK **1.2.5** (ABI 2 inalterada): números JSON no formato de `JSON.stringify` (ECMA-262 NumberToString). Corrige HMAC 401 `TELEMETRY_DEVICE_CREDENTIAL_INVALID` quando o lote tem `|x|<1e-4` (`1e-05` vs `0.00001`).

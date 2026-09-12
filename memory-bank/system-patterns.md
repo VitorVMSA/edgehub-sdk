@@ -5,20 +5,20 @@
 ## Visão geral
 
 ```
-edgehub-client-sdk 0.3.1
-  device/          protocolo ABI 2 (1.2.5)
+edgehub-client-sdk 0.3.2
+  device/          protocolo ABI 2 (1.2.6)
   src/ include/    camada produto (ehc_*)
   port/            HAL (http, storage, now, lock)
     host_stub/     testes
     linux/         OpenSSL + ficheiros
-    esp32/         IDF + NVS
+    esp32/         IDF + NVS + gettimeofday
     embedded/      stubs MCU
   user_template/   tabelas do produto (não na .a)
 ```
 
 ```mermaid
 flowchart TB
-  subgraph sdk [edgehub-client-sdk 0.3.1]
+  subgraph sdk [edgehub-client-sdk 0.3.2]
     device[device/ ABI2]
     client[src/ include/]
     port[port/]
@@ -45,14 +45,18 @@ CMake host: `-DEHC_PORT=host|linux|embedded|esp32`. ESP32 real = projecto IDF `e
 
 ## Padrão: consumo firmware
 
-Um submodule (após 0.3.0): `components/edgehub_sdk` → este repo.
+Slave EcoCircuito: submodule `third_party/edgehub-client-sdk` (não `components/` — o `project()` host parte o configure IDF).
 
-- Device: `EH_SDK_DIR=../edgehub_sdk/device`
+- Device: fontes `device/`
 - Client: `src`, `include`, `port/esp32`
-- Overlay EcoCircuito: `config.apply` / NVS legado **fora** desta lib
+- Overlay EcoCircuito: `config.apply` / NVS legado / SNTP **fora** desta lib
 
-Boot: `lib=1.2.5 client=0.3.1 abi=2`.
+Boot: `lib=1.2.6 client=0.3.2 abi=2`.
+
+## Padrão: `now_ms` no ingest
+
+`ts` ISO-8601 e HMAC saem de `now_ms`. Em produção ESP32 isso **é** epoch Unix (`gettimeofday`). Testes host podem usar relógio sintético. SNTP não pertence à lib.
 
 ## Padrão: features a menos
 
-`memset(&user,0)` = master. Slave: `disable_telemetry=1`, `metric_count=0`. `ehc_init` recusa os três `disable_*` a 1. Slave com comandos MDM: `poll_commands=1` (POST `{values:{}}` no ingest). RAM (`EH_MAX_*`) no CMake do firmware.
+`memset(&user,0)` = master. Slave: `disable_telemetry=1`, `metric_count=0`, `poll_commands=1`. `ehc_init` recusa os três `disable_*` a 1. RAM (`EH_MAX_*`) no CMake do firmware.

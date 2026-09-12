@@ -16,6 +16,10 @@ extern "C" {
  */
 int ehc_port_esp32_init(ehc_port_t *out);
 void ehc_port_esp32_deinit(void);
+int ehc_port_esp32_last_http_status(void);
+void ehc_port_esp32_last_http_snip(char *out, size_t cap);
+void ehc_port_esp32_last_http_op(char *out, size_t cap);
+void ehc_port_esp32_last_cmd(char *out, size_t cap);
 
 #ifdef __cplusplus
 }
