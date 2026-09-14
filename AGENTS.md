@@ -2,7 +2,7 @@
 
 Entrada única para agentes. Leia este ficheiro antes de propor ou implementar. Estrutura de colaboração: [`AI-WORKFLOW.md`](AI-WORKFLOW.md).
 
-Umbrella **0.3.0**: protocolo in-tree (`device/` = edgehub-device-sdk **1.2.4**, ABI 2) + camada de produto.
+Umbrella **0.3.1**: protocolo in-tree (`device/` = edgehub-device-sdk **1.2.5**, ABI 2) + camada de produto.
 
 | Área | Caminho | Doc |
 |------|---------|-----|
@@ -14,7 +14,7 @@ Umbrella **0.3.0**: protocolo in-tree (`device/` = edgehub-device-sdk **1.2.4**,
 | Testes | `tests/` | `docs/TESTING.md` |
 | Docs | `docs/` | `docs/README.md` |
 | Memória | `memory-bank/` | skill `memory-bank` |
-| Release | `releases/v0.3.0/` | `SYNC.txt`, `MANIFEST.txt` |
+| Release | `releases/v0.3.1/` | `SYNC.txt`, `MANIFEST.txt` |
 | Firmware EcoCircuito | `../ecocircuito-maq_v3.0_refatorado` | um submodule `components/edgehub_sdk` — **não** migrar nesta entrega |
 
 **Idioma das respostas:** português. Código/comentários: seguir o ficheiro existente.
@@ -24,7 +24,7 @@ Umbrella **0.3.0**: protocolo in-tree (`device/` = edgehub-device-sdk **1.2.4**,
 ```powershell
 .\scripts\test_host.ps1 -DeviceSdk
 # -DEHC_PORT=host|linux|embedded  (esp32 = examples/esp32_demo no IDF)
-.\scripts\package_release.ps1 -Version 0.3.0
+.\scripts\package_release.ps1 -Version 0.3.1
 ```
 
 ## Armadilhas (gotchas)
@@ -37,7 +37,7 @@ Umbrella **0.3.0**: protocolo in-tree (`device/` = edgehub-device-sdk **1.2.4**,
 | 2026-09 | ESP32 HTTP | 401 EdgeHub = transporte OK; port sem `esp_http_client_perform`. |
 | 2026-09 | Glue | `config.apply` / NVS legado: firmware, não esta lib. |
 | 2026-09 | Import | `device/` por cópia (sem `git subtree` — cria commit). |
-| 2026-09 | Firmware | Após sync: `u->on_download = ehc_user_on_download`; `EHC_CTX_ATTR` em `ehc_user_config.h` (PSRAM). Reaplicar só o fallback `config.apply` em `ehc_commands.c`. |
+| 2026-09 | HMAC | Números JSON = `JSON.stringify`. `%.15g` em `|x|<1e-4` → 401 ingest; check-in no mesmo secret continua 200. |
 
 Mais detalhe: `memory-bank/lessons-learned.md`.
 

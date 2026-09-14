@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1 — 2026-09-13
+
+- Device SDK **1.2.5** (ABI 2 inalterada): números JSON no formato de `JSON.stringify` (ECMA-262 NumberToString). Corrige HMAC 401 `TELEMETRY_DEVICE_CREDENTIAL_INVALID` quando o lote tem `|x|<1e-4` (`1e-05` vs `0.00001`).
+- Testes host: `eh_test_values_writer` (paridade stringify) e `eh_test_hmac_golden` (`1e-5`).
+
 ## 0.3.0 — 2026-09-11
 
 - Device SDK **1.2.4** (ABI 2) in-tree em `device/`. Um único repositório/submodule para todos os firmwares.

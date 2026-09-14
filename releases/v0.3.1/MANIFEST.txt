@@ -1,0 +1,18 @@
+# Ficheiros desta versão — submodule libs/edgehub-client-sdk (tag v0.3.1)
+
+Origem (raiz deste repo)                              Destino no firmware
+device/                                                libs/edgehub-client-sdk/device/
+src/                                                   libs/edgehub-client-sdk/src/
+include/edgehub_client/                                libs/edgehub-client-sdk/include/edgehub_client/
+port/esp32/                                            libs/edgehub-client-sdk/port/esp32/
+VERSION                                                0.3.1
+device/VERSION                                         1.2.5
+device/include/edgehub_device.h                        ABI 2 (EH_LIB_VERSION_PATCH 5)
+
+Não vai no consumo do firmware (fica só neste repo)
+     tests/  examples/  docs/  user_template/  port/linux/  port/host_stub/
+     device/tests/  device/examples/  device/releases/
+
+Glue EcoCircuito (não é desta lib)
+     overlay / ehc_user_*.c  edgehub_apply.c  edgehub_storage.c
+     fallback config.apply

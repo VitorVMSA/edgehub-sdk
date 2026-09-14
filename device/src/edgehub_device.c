@@ -112,7 +112,7 @@ EH_API eh_status_t eh_values_add_num(eh_values_writer_t *w, const char *key, dou
   size_t len;
   eh_status_t rc = add_kv_prefix(w, key);
   if (rc != EH_OK) return rc;
-  snprintf(num, sizeof(num), "%.15g", value);
+  if (!eh_json_print_number(value, num, sizeof(num))) return EH_ERR_BUFFER_TOO_SMALL;
   len = w->len;
   if (!eh_json_append(w->buf, w->cap, &len, num)) return EH_ERR_BUFFER_TOO_SMALL;
   w->len = len;

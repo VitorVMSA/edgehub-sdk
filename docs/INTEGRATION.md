@@ -2,9 +2,9 @@
 
 Copie `user_template/` para o firmware. Não ligue esses `.c` à biblioteca — cada binário traz as suas tabelas.
 
-Umbrella **0.3.0**. Protocolo in-tree: `device/` = edgehub-device-sdk **1.2.4** (ABI 2). Boot esperado: `lib=1.2.4 client=0.3.0 abi=2`.
+Umbrella **0.3.1**. Protocolo in-tree: `device/` = edgehub-device-sdk **1.2.5** (ABI 2). Boot esperado: `lib=1.2.5 client=0.3.1 abi=2`.
 
-Um submodule para todos os firmwares (mapa em `releases/v0.3.0/SYNC.txt`):
+Um submodule para todos os firmwares (mapa em `releases/v0.3.1/SYNC.txt`):
 
 ```
 git submodule add git@github.com-vmsatech:VitorVMSA/edgehub-client-sdk.git components/edgehub_sdk
@@ -100,6 +100,8 @@ if (rc != EHC_OK) {
 ```
 
 `ehc_tel_flush` devolve só `ehc_status_t`. Contagem: `sent = queued_antes - queued_depois` **só** no caminho OK. Em falha HTTP a fila RAM fica; `rejectedIndex` num 401 pode tirar uma leitura do meio — sem `queue_clear` o store duplica `rec_id`. `ehc_tick()` **não** envia telemetria quando `telemetry_manual_only=1`. `ehc_tel_queued()` devolve o tamanho da fila.
+
+Números no `values` / `readings[]` seguem `JSON.stringify` (device 1.2.5). O servidor HMAC-a `JSON.stringify` do body parseado; `%.15g` (`1e-05`) falha o ingest com 401 `TELEMETRY_DEVICE_CREDENTIAL_INVALID` mesmo com o segredo válido. Não imprimir métricas à mão — `ehc_tel_set_num` / `eh_values_add_num`.
 
 ## 4. Check-in keys e assets
 

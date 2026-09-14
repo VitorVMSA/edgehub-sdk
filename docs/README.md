@@ -10,4 +10,4 @@ Um documento canónico por assunto. Histórico curto aponta para o activo.
 | Colaboração com agentes | [`../AI-WORKFLOW.md`](../AI-WORKFLOW.md) |
 | Playbook de prompts | [cursor-agents-playbook.md](cursor-agents-playbook.md) |
 | Memória entre sessões | [`../memory-bank/`](../memory-bank/) |
-| Release 0.3.0 | [`../releases/v0.3.0/`](../releases/v0.3.0/) |
+| Release 0.3.1 | [`../releases/v0.3.1/`](../releases/v0.3.1/) |

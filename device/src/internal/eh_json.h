@@ -6,6 +6,9 @@
 int eh_json_escape_append(char *dst, size_t cap, size_t *len, const char *src);
 int eh_json_append(char *dst, size_t cap, size_t *len, const char *src);
 
+/** Número JSON no formato de `JSON.stringify` (ECMA-262). NaN/Inf → `null`. */
+int eh_json_print_number(double v, char *out, size_t cap);
+
 int eh_find_json_string_value(const char *json, const char *key, char *out, size_t out_cap);
 int eh_find_json_raw_value(const char *json, const char *key, char *out, size_t out_cap);
 int eh_json_has_token(const char *json, const char *token);

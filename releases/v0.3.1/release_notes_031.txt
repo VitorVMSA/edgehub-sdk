@@ -1,0 +1,28 @@
+Resumo
+Release v0.3.1 do EdgeHub Client SDK. Device 1.2.5 imprime números JSON como JSON.stringify (ECMA-262 NumberToString) para o HMAC do ingest bater com o canónico do servidor. ABI 2 inalterada.
+
+Sintoma
+     * POST /device/telemetry → 401 TELEMETRY_DEVICE_CREDENTIAL_INVALID.
+     * Check-in HMAC e credential/issue no mesmo segredo → 200.
+     * Lote readings[] com algum |x|<1e-4 (vazão, corrente, ruído ADC).
+
+Causa
+     * Servidor: HMAC de JSON.stringify({deviceUid, alias:"", readings}) após parse.
+     * Device 1.2.4: %.15g → 1e-05 / 1e-005; Node stringify → 0.00001.
+
+Fix
+     * eh_json_print_number: shortest round-trip + regras ES (decimal se -6<n≤21).
+     * eh_values_add_num usa o printer. NaN/Inf → null.
+
+Versão
+     * VERSION: 0.3.1 (umbrella)
+     * EHC_LIB_VERSION: 0.3.1
+     * device/: 1.2.5 / ABI 2
+     * Tag: v0.3.1
+     * Data: 2026-09-13
+
+Validação
+     * Boot: lib=1.2.5 client=0.3.1 abi=2
+     * cmake + ctest host: 15/15 (eh_test_values_writer + eh_test_hmac_golden 1e-5)
+
+Desde v0.3.0 (device in-tree, disable_*, HMAC previous).

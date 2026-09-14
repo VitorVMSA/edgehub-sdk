@@ -74,6 +74,18 @@ static void test_hmac_executed_failure_matches_node(void)
     eh_test_header_sig(g_ctx.captures[0].headers));
 }
 
+static void test_hmac_small_float_matches_node_stringify(void)
+{
+  TEST_ASSERT_EQUAL(EH_OK, eh_client_set_telemetry_ts(&g_cli, "2026-01-01T00:00:00.000Z"));
+  g_ctx.collect_num = 1e-5;
+  TEST_ASSERT_EQUAL(EH_OK, eh_client_force_telemetry(&g_cli, 0));
+  TEST_ASSERT(g_ctx.capture_count >= 1);
+  TEST_ASSERT(strstr(g_ctx.captures[0].body, "\"values\":{\"temp\":0.00001}") != NULL);
+  TEST_ASSERT_EQUAL_STRING(
+    "c2c3a79fd8fe0de566bbb406c99374a2a3ce30ac201c15d8e67b71f30f256bce",
+    eh_test_header_sig(g_ctx.captures[0].headers));
+}
+
 static void test_hmac_retry_previous_on_401_invalid(void)
 {
   TEST_ASSERT_EQUAL(EH_OK, eh_client_set_secret(&g_cli, "test-secret", "prev-secret"));
@@ -102,6 +114,7 @@ int main(void)
   RUN_TEST(test_hmac_batch_matches_node);
   RUN_TEST(test_hmac_executed_matches_node);
   RUN_TEST(test_hmac_executed_failure_matches_node);
+  RUN_TEST(test_hmac_small_float_matches_node_stringify);
   RUN_TEST(test_hmac_retry_previous_on_401_invalid);
   return UNITY_END();
 }

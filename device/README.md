@@ -2,7 +2,7 @@
 
 Biblioteca C compilada (caixa preta) para integração de dispositivos embarcados com a plataforma EdgeHub MDM/Telemetry.
 
-Versão actual: **1.2.4** (ABI 2).
+Versão actual: **1.2.5** (ABI 2).
 
 ## Conteúdo do release
 

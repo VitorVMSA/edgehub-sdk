@@ -5,8 +5,8 @@
 ## Visão geral
 
 ```
-edgehub-client-sdk 0.3.0
-  device/          protocolo ABI 2 (1.2.4)
+edgehub-client-sdk 0.3.1
+  device/          protocolo ABI 2 (1.2.5)
   src/ include/    camada produto (ehc_*)
   port/            HAL (http, storage, now, lock)
     host_stub/     testes
@@ -18,7 +18,7 @@ edgehub-client-sdk 0.3.0
 
 ```mermaid
 flowchart TB
-  subgraph sdk [edgehub-client-sdk 0.3.0]
+  subgraph sdk [edgehub-client-sdk 0.3.1]
     device[device/ ABI2]
     client[src/ include/]
     port[port/]
@@ -51,7 +51,7 @@ Um submodule (após 0.3.0): `components/edgehub_sdk` → este repo.
 - Client: `src`, `include`, `port/esp32`
 - Overlay EcoCircuito: `config.apply` / NVS legado **fora** desta lib
 
-Boot: `lib=1.2.4 client=0.3.0 abi=2`.
+Boot: `lib=1.2.5 client=0.3.1 abi=2`.
 
 ## Padrão: features a menos
 

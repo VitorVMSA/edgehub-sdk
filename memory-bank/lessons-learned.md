@@ -71,3 +71,13 @@
 **Fix:** um retry HMAC com previous em 401 `*_CREDENTIAL_INVALID`. Harness/host stub **consomem** a reply matching (senão o 2.º POST via o mesmo 401). `expiresAt` vs `now_ms` só é útil com wall-clock Unix; ESP32 monotónico cai no 401 EXPIRED.
 
 **Evitar:** retry em EXPIRED/REVOKED; reutilizar a mesma reply HTTP nos testes de retry; `schedule_backoff` no poll de comandos (atrasaria o check-in do slave).
+
+---
+
+### 2026-09 | HMAC | Números ≠ JSON.stringify
+
+**Causa:** o ingest assina `JSON.stringify` do body parseado (`canonicalTelemetryBatchPayload`, com `alias:""`). `%.15g` em `|x|<1e-4` emite `1e-05`/`1e-005`; o Node emite `0.00001`. O HMAC do lote inteiro falha (401 `TELEMETRY_DEVICE_CREDENTIAL_INVALID`) mesmo com o segredo válido — o check-in (chaves string) continua 200. `%.17g` sozinho gera dígitos a mais que também falham o HMAC.
+
+**Fix:** `eh_json_print_number` (shortest round-trip + regras ES `-6<n≤21`) em `eh_values_add_num`. Testes `eh_test_values_writer` + `eh_test_hmac_golden` com `1e-5`.
+
+**Evitar:** patch só no glue EcoCircuito; alterar o contrato do servidor; usar `%.15g`/`%.17g` no body canónico.

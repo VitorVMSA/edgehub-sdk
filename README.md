@@ -1,6 +1,6 @@
 # EdgeHub Client SDK
 
-Camada C99 portável. Inclui o protocolo [`edgehub-device-sdk`](https://github.com/VitorVMSA/edgehub-device-sdk) **1.2.4** (ABI 2) em `device/`. Trata sozinha de:
+Camada C99 portável. Inclui o protocolo [`edgehub-device-sdk`](https://github.com/VitorVMSA/edgehub-device-sdk) **1.2.5** (ABI 2) em `device/`. Trata sozinha de:
 
 - **Prontidão** — não envia nada à rede sem `base_url`, `device_uid` e keys obrigatórias
 - **Check-in** mínimo vs completo (`group_key` + `product_code`)
@@ -8,19 +8,19 @@ Camada C99 portável. Inclui o protocolo [`edgehub-device-sdk`](https://github.c
 - **Comandos** — dispatch por `commandKey`, argumentos tipados, `DEFER_AFTER_ACK`
 - **Features a menos** — `disable_telemetry` / `disable_commands` / `disable_checkin` (`memset` 0 = tudo ligado)
 
-Versão umbrella: **0.3.0** (`lib=1.2.4 client=0.3.0 abi=2`). Sem `malloc` nesta camada (o batch de 64 KiB do device SDK continua opt-in). A fila de telemetria do client é só RAM — persistência de pacotes fica na aplicação. Notas e manifesto de sync: `releases/v0.3.0/`.
+Versão umbrella: **0.3.1** (`lib=1.2.5 client=0.3.1 abi=2`). Sem `malloc` nesta camada (o batch de 64 KiB do device SDK continua opt-in). A fila de telemetria do client é só RAM — persistência de pacotes fica na aplicação. Notas e manifesto de sync: `releases/v0.3.1/`.
 
 ## Layout
 
 ```
-device/                   protocolo (ABI 2, 1.2.4)
+device/                   protocolo (ABI 2, 1.2.5)
 include/edgehub_client/   API pública do client
 src/                      núcleo do client
 port/{esp32,linux,embedded,host_stub}/
 user_template/            copiar para o firmware
 examples/{linux_demo,esp32_demo,embedded_stub}/
 tests/                    Unity + CTest
-releases/v0.3.0/          release_notes, SYNC, MANIFEST
+releases/v0.3.1/          release_notes, SYNC, MANIFEST
 ```
 
 O CMake faz `add_subdirectory(device)` (`EHC_DEVICE_SDK_ROOT` default). Não é preciso o irmão `../edgehub-device-sdk` nem `third_party/`.
@@ -43,7 +43,7 @@ Em Unix: `scripts/test_host.sh`. Os testes Unity do device in-tree correm no mes
 
 ## Integração rápida
 
-1. Submodule deste repo no firmware (ver `releases/v0.3.0/SYNC.txt`).
+1. Submodule deste repo no firmware (ver `releases/v0.3.1/SYNC.txt`).
 2. Copiar `user_template/` para o projecto e preencher as tabelas.
 3. Ligar um port: `port/linux`, `port/esp32`, ou copiar `port/embedded/` para outro MCU (`-DEHC_PORT=linux|embedded|esp32`).
 4. `ehc_init(&port, &user)` e `ehc_tick()` no loop.

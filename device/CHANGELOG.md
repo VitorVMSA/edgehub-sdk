@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.5 — 2026-09-13
+
+- `eh_values_add_num` imprime números como `JSON.stringify` (ECMA-262 NumberToString): decimal se `-6 < n ≤ 21`, senão científico sem zeros à esquerda no expoente (`1e-7`, `1e+21`). NaN/Inf → `null`; `-0` → `0`.
+- O ingest HMAC reconstrói o canónico com `JSON.stringify` do body parseado. `%.15g` gerava `1e-05` / `1e-005` para `|x|<1e-4` e invalidava o HMAC do lote inteiro (check-in no mesmo segredo continuava 200).
+- **ABI 2 unchanged.**
+
 ## 1.2.4 — 2026-09-11
 
 - Check-in 401 `CHECKIN_DEVICE_CREDENTIAL_REVOKED` e `CHECKIN_DEVICE_CREDENTIAL_REQUIRED` armam `needs_credential_reprovision` (paridade com telemetria).

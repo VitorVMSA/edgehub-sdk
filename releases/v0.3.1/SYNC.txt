@@ -1,0 +1,24 @@
+Consumo no firmware EcoCircuito (não é flash USB)
+
+Pasta da lib
+     C:\workspace\ecocircuito\edgehub-client-sdk
+
+Submodule
+  git submodule add git@github.com:VitorVMSA/edgehub-client-sdk.git libs/edgehub-client-sdk
+  git -C libs/edgehub-client-sdk checkout --detach v0.3.1
+
+CMake do firmware
+  Device:  fontes libs/edgehub-client-sdk/device
+  Client:  libs/edgehub-client-sdk/src, include, port/esp32
+  Overlay EcoCircuito inalterado (config.apply / NVS legado)
+
+Após o sync:
+     1. u->on_download = ehc_user_on_download
+     2. EHC_CTX_ATTR em ehc_user_config.h (PSRAM)
+     3. Diff overlay/ehc_commands.c contra src/ehc_commands.c (fallback config.apply)
+     4. scripts/sync_edgehub_sources.ps1 aponta à tag v0.3.1
+
+Validação
+     Boot: lib=1.2.5 client=0.3.1 abi=2
+     Testes host: .\scripts\test_host.ps1 -DeviceSdk
+     Ingest: lote com |x|<1e-4 não deve devolver 401 CREDENTIAL_INVALID
