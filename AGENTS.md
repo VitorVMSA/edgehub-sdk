@@ -1,21 +1,22 @@
 # AGENTS.md — EdgeHub Client SDK
 
-Entrada única para agentes. Leia este ficheiro antes de propor ou implementar. Estrutura de colaboração: [`AI-WORKFLOW.md`](AI-WORKFLOW.md).
+Entrada única para agentes **neste git**. Leia isto antes de propor ou implementar. Estrutura Cursor: [`AI-WORKFLOW.md`](AI-WORKFLOW.md).
+
+**Contrato da biblioteca (HTTP, payloads, ports, runbooks):** [`docs/README.md`](docs/README.md) — este git. Quem clona o repo **não** precisa de Obsidian. Runtime Cursor (`AGENTS.md`, `.cursor/`) fica aqui. Memória de sessão: vault `90 - Agent Workspace/EdgeHub/Client SDK/`. Contrato público: `docs/`.
 
 Umbrella **0.3.2**: protocolo in-tree (`device/` = edgehub-device-sdk **1.2.6**, ABI 2) + camada de produto.
 
-| Área | Caminho | Doc |
-|------|---------|-----|
+| Área | Caminho | Docs |
+|------|---------|------|
 | Versão | `VERSION`, `EHC_LIB_VERSION` em `include/edgehub_client/ehc.h` | `CHANGELOG.md` |
-| Device | `device/` (1.2.6, ABI 2) | `device/README.md` se existir |
-| Client | `include/edgehub_client/`, `src/` | `docs/INTEGRATION.md` |
-| Ports | `port/{host_stub,linux,esp32,embedded}/` | `docs/PORTING.md` |
-| Template produto | `user_template/` | `docs/INTEGRATION.md` |
-| Testes | `tests/` | `docs/TESTING.md` |
-| Docs | `docs/` | `docs/README.md` |
-| Memória | `memory-bank/` | skill `memory-bank` |
+| Device | `device/` (1.2.6, ABI 2) | [docs/PROTOCOL.md](docs/PROTOCOL.md) · `device/docs/INTEGRATION.md` |
+| Client | `include/edgehub_client/`, `src/` | [docs/API.md](docs/API.md) · [docs/INTEGRATION.md](docs/INTEGRATION.md) |
+| Ports | `port/{host_stub,linux,esp32,embedded}/` | [docs/PORTING.md](docs/PORTING.md) |
+| Template produto | `user_template/` | [docs/INTEGRATION.md](docs/INTEGRATION.md) |
+| Testes | `tests/` | [docs/TESTING.md](docs/TESTING.md) |
+| Memória de sessão | vault `90 - Agent Workspace/EdgeHub/Client SDK/` | skill pessoal `memory-bank` (não substitui `docs/`) |
 | Release | `releases/v0.3.2/` | `SYNC.txt`, `MANIFEST.txt` |
-| Firmware EcoCircuito | master `../ecocircuito-maq_v3.0_refatorado` (`libs/` ou `components/edgehub_sdk`); slave `../ecocircuito-maq_v3.0_slave_refatorado` | slave: submodule `third_party/edgehub-client-sdk` — **não** pôr sob `components/` (CMake host desta lib parte o IDF) |
+| Firmware EcoCircuito | master `../ecocircuito-maq_v3.0_refatorado`; slave `../ecocircuito-maq_v3.0_slave_refatorado` | slave: submodule `third_party/edgehub-client-sdk` — **não** pôr sob `components/` (CMake host desta lib parte o IDF) |
 
 **Idioma das respostas:** português. Código/comentários: seguir o ficheiro existente.
 
@@ -29,6 +30,8 @@ Umbrella **0.3.2**: protocolo in-tree (`device/` = edgehub-device-sdk **1.2.6**,
 
 ## Armadilhas (gotchas)
 
+Índice curto para o Cursor. Detalhe + payloads: [`docs/`](docs/README.md).
+
 | Data | Área | Lição |
 |------|-------|-------|
 | 2026-09 | Flags | `memset(&user,0)` = master; usar `disable_*`, não `enable_*=0`. |
@@ -41,7 +44,7 @@ Umbrella **0.3.2**: protocolo in-tree (`device/` = edgehub-device-sdk **1.2.6**,
 | 2026-09 | Import | `device/` por cópia (sem `git subtree` — cria commit). |
 | 2026-09 | HMAC | Números JSON = `JSON.stringify`. `%.15g` em `|x|<1e-4` → 401 ingest; check-in no mesmo secret continua 200. |
 
-Mais detalhe: `memory-bank/lessons-learned.md`.
+Mais detalhe de sessão: vault `90 - Agent Workspace/EdgeHub/Client SDK/lessons.md`. Runbooks: [docs/RUNBOOK_HMAC.md](docs/RUNBOOK_HMAC.md) · [docs/RUNBOOK_ESP32.md](docs/RUNBOOK_ESP32.md).
 
 ## Mapa de rules
 
@@ -54,22 +57,17 @@ Mais detalhe: `memory-bank/lessons-learned.md`.
 
 | Skill | Quando usar |
 |-------|-------------|
-| `memory-bank` | Início/fim de tarefa não trivial; contexto e histórico |
+| `memory-bank` | Início/fim de tarefa não trivial; contexto e histórico de **sessão** |
 | `skill-evolution` | Transformar aprendizagens em rule/skill/memória |
 | `ehc-porting` | Novo port / MCU / Linux / ESP32 |
 
-## Memória persistente (`memory-bank/`)
+## Memória persistente
 
-**Ler** no início de: bugs, continuação de sessão, features multi-ficheiro, decisões de arquitetura.
+Vault: `C:\obsidian_vault\90 - Agent Workspace\EdgeHub\Client SDK\`. Contrato HTTP/ABI → `docs/` neste git. **Não** dual-write o contrato para a memória de sessão.
 
-**Atualizar** ao concluir: feature, correção, armadilha nova, mudança de ABI/port.
+**Ler** no início de: bugs, continuação de sessão, features multi-ficheiro.
 
-| Ficheiro | Conteúdo |
-|----------|----------|
-| `active-context.md` | Foco, WIP, decisões, histórico recente |
-| `progress.md` | O que funciona / issues |
-| `lessons-learned.md` | Causa-raiz + fix |
-| `system-patterns.md` | Arquitetura + links |
+**Atualizar** ao concluir: WIP, issues, armadilha nova.
 
 ## Agentes (`.cursor/agents/`)
 
@@ -79,7 +77,7 @@ Mais detalhe: `memory-bank/lessons-learned.md`.
 | `proposal-implementer` | Implementa **só** o aprovado |
 | `sdk-review` | Revisão só-leitura (ABI, ports, flags, HTTP) |
 
-Playbook: `docs/cursor-agents-playbook.md`.
+Playbook: [docs/cursor-agents-playbook.md](docs/cursor-agents-playbook.md).
 
 ## Pós-implementação
 
@@ -87,10 +85,10 @@ Ao fechar tarefa com alteração de código:
 
 - [ ] Escopo mínimo — sem refactors não pedidos
 - [ ] `.\scripts\test_host.ps1 -DeviceSdk` se o host CMake / `src/` / `device/` mudou
-- [ ] Atualizar `memory-bank/active-context.md` e `progress.md`
-- [ ] Armadilha nova em `memory-bank/lessons-learned.md`
-- [ ] Doc canónica só se o contrato/port mudou
-- [ ] Skill/rule se o procedimento for reutilizável
+- [ ] Atualizar vault `90 - Agent Workspace/EdgeHub/Client SDK/` (`active-context`, `progress`)
+- [ ] Armadilha nova em `lessons.md` no vault
+- [ ] Contrato/port/runbook → `docs/` neste git
+- [ ] Skill/rule se o procedimento Cursor for reutilizável
 - [ ] **Não** criar commit salvo pedido explícito
 
 ## Fluxo de entrega
@@ -100,9 +98,3 @@ Ao fechar tarefa com alteração de código:
 3. Implementação (`proposal-implementer` ou agente principal)
 4. Revisão (`sdk-review`) se ABI/ports/flags
 5. Testes host quando aplicável
-
-## Links rápidos
-
-- Índice de docs: `docs/README.md`
-- Estrutura IA: `AI-WORKFLOW.md`
-- README técnico: `README.md`
