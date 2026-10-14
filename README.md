@@ -8,7 +8,7 @@ Camada C99 portável. Inclui o protocolo [`edgehub-device-sdk`](https://github.c
 - **Comandos** — dispatch por `commandKey`, argumentos tipados, `DEFER_AFTER_ACK`
 - **Features a menos** — `disable_telemetry` / `disable_commands` / `disable_checkin` (`memset` 0 = tudo ligado)
 
-Versão umbrella: **0.3.2** (`lib=1.2.6 client=0.3.2 abi=2`). Sem `malloc` nesta camada (o device SDK usa heap opt-in no check-in/issue/poll; o batch de 64 KiB continua opt-in). A fila de telemetria do client é só RAM — persistência de pacotes fica na aplicação. Notas e manifesto de sync: `releases/v0.3.2/`.
+Versão umbrella: **0.3.3** (`lib=1.2.6 client=0.3.3 abi=2`). Sem `malloc` nesta camada (o device SDK usa heap opt-in no check-in/issue/poll; o batch de 64 KiB continua opt-in). A fila de telemetria do client é só RAM — persistência de pacotes fica na aplicação. Notas e manifesto de sync: `releases/v0.3.2/`.
 
 ## Layout
 

@@ -138,7 +138,8 @@ eh_status_t eh_run_command_executed(
     sizeof(resp),
     &resp_len,
     &http_status,
-    &retry_after_sec
+    &retry_after_sec,
+    NULL
   );
   if (!http_ok || http_status < 200 || http_status > 299) {
     eh_client_note_http_retry(cli, http_status, retry_after_sec);

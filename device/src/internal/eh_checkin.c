@@ -248,7 +248,8 @@ eh_status_t eh_run_checkin(eh_client_t *cli) {
       EH_MAX_RESPONSE,
       &resp_len,
       &http_status,
-      &retry_after_sec);
+      &retry_after_sec,
+      NULL);
   if (resp_len >= EH_MAX_RESPONSE) resp_len = EH_MAX_RESPONSE - 1;
   resp[resp_len] = '\0';
   if (resp_len >= EH_MAX_RESPONSE - 1) {

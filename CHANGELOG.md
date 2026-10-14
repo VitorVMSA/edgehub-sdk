@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.3 — 2026-10-14
+
+- API aditiva `ehc_set_log_level()` para configurar ERROR/WARN/INFO/DEBUG em runtime; default INFO preservado e ABI do device inalterada.
+- Eventos seguros `telemetry_enqueue`, `telemetry_flush` e `telemetry_http` distinguem status do client, fila, transporte, HTTP e códigos reconhecidos de credencial/validação sem registrar payload ou segredo.
+- Documentado diagnóstico em ambiente de teste, evidência de aceitação e responsabilidade da aplicação por persistência/replay.
+
 ## 0.3.2 — 2026-09-13
 
 - `ehc_poll_downlink()`: poll imediato de `pendingCommands` (além do intervalo em `ehc_tick`). `ehc_poll_commands_enabled()`.

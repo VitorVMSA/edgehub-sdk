@@ -60,6 +60,8 @@ typedef struct {
 } ehc_device_status_t;
 
 ehc_status_t ehc_init(const ehc_port_t *port, const ehc_user_t *user);
+/** Configura o nível de log em runtime; o padrão após ehc_init é EHC_LOG_INFO. */
+ehc_status_t ehc_set_log_level(ehc_log_level_t level);
 void ehc_shutdown(void);
 int ehc_is_initialized(void);
 /** 1 se o client está a fazer poll de `pendingCommands` (slave). */
@@ -81,7 +83,7 @@ ehc_readiness_t ehc_get_readiness(void);
 const char *ehc_readiness_name(ehc_readiness_t r);
 const char *ehc_not_ready_reason(void);
 
-#define EHC_LIB_VERSION "0.3.2"
+#define EHC_LIB_VERSION "0.3.3"
 
 #ifdef __cplusplus
 }

@@ -2,7 +2,7 @@
 
 Copie `user_template/` para o firmware. Não ligue esses `.c` à biblioteca — cada binário traz as suas tabelas.
 
-Umbrella **0.3.2**. Protocolo in-tree: `device/` = edgehub-device-sdk **1.2.6** (ABI 2). Boot esperado: `lib=1.2.6 client=0.3.2 abi=2`.
+Umbrella **0.3.3**. Protocolo in-tree: `device/` = edgehub-device-sdk **1.2.6** (ABI 2). Boot esperado: `lib=1.2.6 client=0.3.3 abi=2`.
 
 Um submodule para todos os firmwares (mapa em `releases/v0.3.2/SYNC.txt`). No slave ESP-IDF **não** usar `components/` (o `project()` host desta lib parte o configure):
 
@@ -59,6 +59,27 @@ u.identity_pkcs8 = (ehc_identity_source_t)EHC_IDENT_STORE("identity_pkcs8");
 ```
 
 HMAC: o servidor aceita o secret antigo até `rotateGraceUntil`. Após 401 `*_CREDENTIAL_INVALID` a lib faz **um** retry com `secret_previous`. `expiresAt` do issue é parseado; no tick, depois dessa data, arma `needs_credential_reprovision` (check-in sem HMAC, como no 401 EXPIRED). A comparação usa `now_ms` do port: precisa de wall-clock Unix. O port ESP32 usa `gettimeofday` (epoch); SNTP fica no firmware. Relógio só `esp_timer` (uptime) não dispara este caminho — a recuperação continua a ser o 401 EXPIRED.
+
+### Logs e diagnóstico seguro
+
+O callback de log já existente no port (`ehc_port_t.log`) recebe os logs do client e do device. O nível padrão continua `EHC_LOG_INFO`. Para uma sessão de diagnóstico, configure DEBUG logo após `ehc_init` e antes de `ehc_tick`, `ehc_tel_enqueue` ou `ehc_tel_flush`:
+
+```c
+ehc_status_t rc = ehc_init(&port, &user);
+if (rc == EHC_OK) {
+  (void)ehc_set_log_level(EHC_LOG_DEBUG);
+}
+```
+
+`ehc_set_log_level()` aceita `EHC_LOG_ERROR`, `EHC_LOG_WARN`, `EHC_LOG_INFO` e `EHC_LOG_DEBUG`; valor fora da enumeração devolve `EHC_EINVAL`. A chamada também atualiza o device se este já tiver sido inicializado. Não altera a assinatura nem os argumentos do callback e não exige mudanças nos ports host, Linux, ESP32 ou embedded.
+
+Em DEBUG, os eventos `telemetry_enqueue` e `telemetry_flush` do client incluem etapa, `status` simbólico e numérico (`EHC_*`), `queue_before`, `queue_after` e `result`. O device emite `telemetry_http` com `result`, `http_status` e `category`: `transport_failure`, `request_failure` (preparação local antes do HTTP), `http_rejection` ou `accepted`; categorias `credential` e `validation` só são usadas para valores exatos do campo JSON `code` que a implementação reconhece. Outros corpos de erro ficam como `unknown`. O evento de sucesso HTTP é evidência da resposta 2xx; não prova processamento posterior do lado do servidor.
+
+Para coletar em ambiente de teste, use um dispositivo de bancada e um callback de log que encaminhe mensagens para o console/serial do port. Ative DEBUG temporariamente, reproduza um enqueue e flush, e recolha o intervalo desde `telemetry_enqueue` até `telemetry_http`/`telemetry_flush`. Os eventos não imprimem URL, headers, corpo, valores de métricas ou credenciais. Não adicione dumps de request/response ao callback.
+
+`ehc_tel_flush()` continua a devolver apenas `ehc_status_t`: HTTP/transporte falho chega ao client como `EHC_EIO`. Para medir remoção, compare `ehc_tel_queued()` antes e depois. HTTP 2xx acompanhado da redução esperada da fila é a evidência disponível de confirmação/aceitação para esse batch no contrato atual; não prova persistência/processamento posterior. Observe também `queue_after`: `rejectedIndex` numa resposta de erro pode remover uma leitura mesmo quando o flush falha. Não confirme o armazenamento persistente da aplicação apenas com `EHC_OK`.
+
+A fila do SDK é RAM. Persistência, replay e ACK do armazenamento pertencem à aplicação consumidora. Se a fila RAM saturar, a política já existente pode descartar a leitura mais antiga (`telemetry_queue_full_drop_oldest`); isso é saturação local, não rejeição remota. Preserve no storage da aplicação os registos que ainda não foram confirmados segundo o contrato do produto.
 
 ## 3. Telemetria
 

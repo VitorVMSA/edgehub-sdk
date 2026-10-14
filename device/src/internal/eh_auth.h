@@ -29,6 +29,7 @@ eh_status_t eh_build_executed_headers(
  * Se 401 `*_CREDENTIAL_INVALID` e há previous, um retry com o secret antigo.
  * `canonical` é o payload HMAC (body de check-in / canonical de telemetria/executed).
  * Devolve o flag de transporte (nonzero = OK).
+ * `transport_failed` indica que o callback HTTP foi chamado e reportou falha.
  */
 int eh_client_http_post_hmac(
   eh_client_t *cli,
@@ -41,7 +42,8 @@ int eh_client_http_post_hmac(
   size_t resp_cap,
   size_t *resp_len,
   int *http_status,
-  uint32_t *retry_after_sec
+  uint32_t *retry_after_sec,
+  int *transport_failed
 );
 
 #endif /* EH_AUTH_H */

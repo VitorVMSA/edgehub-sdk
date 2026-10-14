@@ -34,6 +34,9 @@ void ehc_logf(ehc_log_level_t lvl, const char *fmt, ...)
   if (!g_ehc.port.log) {
     return;
   }
+  if ((int)lvl > (int)g_ehc.log_level) {
+    return;
+  }
   va_start(ap, fmt);
   vsnprintf(buf, sizeof(buf), fmt, ap);
   va_end(ap);
@@ -98,6 +101,29 @@ static int ident_nonempty(const ehc_identity_source_t *src)
 {
   char buf[EHC_IDENT_MAX];
   return ehc_resolve_ident(src, buf, sizeof(buf));
+}
+
+static const char *ehc_status_name(ehc_status_t status)
+{
+  switch (status) {
+    case EHC_OK: return "EHC_OK";
+    case EHC_EINVAL: return "EHC_EINVAL";
+    case EHC_ENOTREADY: return "EHC_ENOTREADY";
+    case EHC_ECONFIG: return "EHC_ECONFIG";
+    case EHC_EIO: return "EHC_EIO";
+    case EHC_EABI: return "EHC_EABI";
+    case EHC_EAGAIN: return "EHC_EAGAIN";
+    default: return "EHC_UNKNOWN";
+  }
+}
+
+static void ehc_log_telemetry_event(
+  const char *stage, ehc_status_t status, uint8_t before, uint8_t after, const char *result)
+{
+  ehc_logf(EHC_LOG_DEBUG,
+    "telemetry_%s status=%s(%d) queue_before=%u queue_after=%u result=%s",
+    stage, ehc_status_name(status), (int)status,
+    (unsigned)before, (unsigned)after, result);
 }
 
 void ehc_refresh_readiness(void)
@@ -218,7 +244,7 @@ ehc_status_t ehc_ensure_eh_client(void)
     strncpy(cfg.product_code, pc, sizeof(cfg.product_code) - 1);
   }
   cfg.enable_logs = 1;
-  cfg.log_level = EH_LOG_INFO;
+  cfg.log_level = (eh_log_level_t)g_ehc.log_level;
   cfg.enable_checkin = g_ehc.user.disable_checkin ? 0 : 1;
   cfg.enable_telemetry = g_ehc.user.disable_telemetry ? 0 : 1;
   cfg.enable_commands = g_ehc.user.disable_commands ? 0 : 1;
@@ -302,6 +328,7 @@ ehc_status_t ehc_init(const ehc_port_t *port, const ehc_user_t *user)
     return EHC_EINVAL;
   }
   memset(&g_ehc, 0, sizeof(g_ehc));
+  g_ehc.log_level = EHC_LOG_INFO;
   g_ehc.port = *port;
   g_ehc.user = *user;
   g_ehc.used = 1;
@@ -316,6 +343,23 @@ ehc_status_t ehc_init(const ehc_port_t *port, const ehc_user_t *user)
     return rc;
   }
   ehc_refresh_readiness();
+  return EHC_OK;
+}
+
+ehc_status_t ehc_set_log_level(ehc_log_level_t level)
+{
+  if (!g_ehc.used) {
+    return EHC_EINVAL;
+  }
+  if ((int)level < (int)EHC_LOG_ERROR || (int)level > (int)EHC_LOG_DEBUG) {
+    return EHC_EINVAL;
+  }
+  ehc_lock();
+  g_ehc.log_level = level;
+  if (g_ehc.eh_inited) {
+    g_ehc.eh.cfg.log_level = (eh_log_level_t)level;
+  }
+  ehc_unlock();
   return EHC_OK;
 }
 
@@ -566,11 +610,17 @@ static ehc_status_t tel_flush_locked(void)
 ehc_status_t ehc_tel_enqueue(const char *ts_iso)
 {
   ehc_status_t rc;
+  uint8_t before;
+  uint8_t after;
   if (!g_ehc.used) {
     return EHC_EINVAL;
   }
   ehc_lock();
+  before = g_ehc.eh_inited ? eh_client_telemetry_queue_count(&g_ehc.eh) : 0;
   rc = tel_enqueue_locked(ts_iso);
+  after = g_ehc.eh_inited ? eh_client_telemetry_queue_count(&g_ehc.eh) : 0;
+  ehc_log_telemetry_event("enqueue", rc, before, after,
+    rc == EHC_OK ? "queued" : (rc == EHC_ENOTREADY ? "not_ready" : "failed"));
   ehc_unlock();
   return rc;
 }
@@ -578,21 +628,31 @@ ehc_status_t ehc_tel_enqueue(const char *ts_iso)
 ehc_status_t ehc_tel_flush(void)
 {
   ehc_status_t rc;
+  uint8_t before;
+  uint8_t after;
   if (!g_ehc.used) {
     return EHC_EINVAL;
   }
   ehc_lock();
+  before = g_ehc.eh_inited ? eh_client_telemetry_queue_count(&g_ehc.eh) : 0;
   ehc_refresh_readiness();
   if (g_ehc.readiness == EHC_UNCONFIGURED) {
+    ehc_log_telemetry_event("flush", EHC_ENOTREADY, before, before, "not_ready");
     ehc_unlock();
     return EHC_ENOTREADY;
   }
   rc = ehc_ensure_eh_client();
   if (rc != EHC_OK) {
+    after = g_ehc.eh_inited ? eh_client_telemetry_queue_count(&g_ehc.eh) : 0;
+    ehc_log_telemetry_event("flush", rc, before, after, "client_init_failed");
     ehc_unlock();
     return rc;
   }
   rc = tel_flush_locked();
+  after = g_ehc.eh_inited ? eh_client_telemetry_queue_count(&g_ehc.eh) : 0;
+  ehc_log_telemetry_event("flush", rc, before, after,
+    rc != EHC_OK ? "failed" : (after < before ? "accepted" :
+      (g_ehc.readiness == EHC_ACTIVE ? "no_queue_change" : "deferred")));
   ehc_unlock();
   return rc;
 }
