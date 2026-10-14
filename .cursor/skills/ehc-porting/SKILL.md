@@ -45,4 +45,4 @@ Não compilar dois `ed25519_randombytes_unsafe` no mesmo binário.
 - Slave: `user.disable_telemetry = 1`, `metric_count = 0`; RAM via `EH_MAX_*` no CMake do firmware
 - ESP32 WROOM: não pôr esta lib sob `components/` (CMake host); SNTP fica no firmware
 
-Detalhe: `docs/PORTING.md`.
+Detalhe: `docs/PORTING.md` e `docs/ARCHITECTURE.md`.

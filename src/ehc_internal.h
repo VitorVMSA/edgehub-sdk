@@ -43,6 +43,7 @@ typedef struct {
 typedef struct {
   uint8_t used;
   uint8_t lock_depth;
+  ehc_log_level_t log_level;
   eh_client_t eh;
   ehc_port_t port;
   ehc_user_t user;

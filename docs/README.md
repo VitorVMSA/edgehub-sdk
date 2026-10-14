@@ -1,14 +1,22 @@
-# Docs
+# Docs — EdgeHub Client SDK
 
-Um documento canónico por assunto. Histórico curto aponta para o activo.
+Contrato **público** da biblioteca (umbrella **0.3.3**, device **1.2.6**, ABI **2**). Quem clona este repositório **não precisa** do Obsidian: estes ficheiros são a fonte para integrar, portar e debugar.
 
-| Assunto | Doc |
-|---------|-----|
-| Integração / `ehc_user_t` / flags | [INTEGRATION.md](INTEGRATION.md) |
-| HAL / Linux / ESP32 / MCU | [PORTING.md](PORTING.md) |
-| Testes host Unity/CTest | [TESTING.md](TESTING.md) |
-| Colaboração com agentes | [`../AI-WORKFLOW.md`](../AI-WORKFLOW.md) |
-| Playbook de prompts | [cursor-agents-playbook.md](cursor-agents-playbook.md) |
-| Memória entre sessões | [`../memory-bank/`](../memory-bank/) |
-| Release 0.3.2 | [`../releases/v0.3.2/`](../releases/v0.3.2/) |
-| Release 0.3.1 | [`../releases/v0.3.1/`](../releases/v0.3.1/) |
+Runtime Cursor (só quem trabalha neste git com agentes): `AGENTS.md` e `.cursor/`. Memória de sessão pessoal fica fora deste repositório. Changelog: `CHANGELOG.md`.
+
+| Ficheiro | Conteúdo |
+|----------|----------|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Camadas, ABI, prontidão, storage, RAM compile-time |
+| [API.md](API.md) | `ehc_*`: códigos, `ehc_user_t`, tick, telemetria, comandos |
+| [PROTOCOL.md](PROTOCOL.md) | Rotas HTTP, payloads, erros, handshake, downlink |
+| [HMAC.md](HMAC.md) | Canónico vs body, números `JSON.stringify`, goldens |
+| [INTEGRATION.md](INTEGRATION.md) | Firmware: CMake, identidade, loop, `disable_*`, slave |
+| [PORTING.md](PORTING.md) | HAL `ehc_port_t`, Linux, ESP32, MCU, NVS legado |
+| [TESTING.md](TESTING.md) | Unity/CTest host |
+| [RUNBOOK_HMAC.md](RUNBOOK_HMAC.md) | 401 ingest/check-in |
+| [RUNBOOK_ESP32.md](RUNBOOK_ESP32.md) | Relógio, HTTP `perform`, heap, NVS |
+| [cursor-agents-playbook.md](cursor-agents-playbook.md) | Prompts Cursor (opcional) |
+
+Device in-tree: `device/docs/INTEGRATION.md` (API `eh_*`). Preferir a camada `ehc_*` deste umbrella.
+
+Não colar HMAC/PKCS#8 de equipamentos de campo nem `.env` nestes ficheiros. Placeholders de teste (`test-secret`, `demo-group`) **não** são produção.

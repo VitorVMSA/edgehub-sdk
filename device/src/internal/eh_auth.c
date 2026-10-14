@@ -100,7 +100,8 @@ int eh_client_http_post_hmac(
   size_t resp_cap,
   size_t *resp_len,
   int *http_status,
-  uint32_t *retry_after_sec
+  uint32_t *retry_after_sec,
+  int *transport_failed
 ) {
   char headers[EH_MAX_HEADERS];
   eh_status_t rc;
@@ -110,6 +111,7 @@ int eh_client_http_post_hmac(
   size_t n = 0;
 
   if (!cli) return 0;
+  if (transport_failed) *transport_failed = 0;
   if (http_status) {
     *http_status = 0;
   }
@@ -128,6 +130,7 @@ int eh_client_http_post_hmac(
   http_ok = eh_client_http_post(
     cli, url, headers, body, body_len, resp, resp_cap, &n, &status_local, &retry_local
   );
+  if (!http_ok && transport_failed) *transport_failed = 1;
   if (resp && resp_cap) {
     if (n >= resp_cap) n = resp_cap - 1;
     resp[n] = '\0';
@@ -158,6 +161,7 @@ int eh_client_http_post_hmac(
     http_ok = eh_client_http_post(
       cli, url, headers, body, body_len, resp, resp_cap, &n, &status_local, &retry_local
     );
+    if (transport_failed) *transport_failed = http_ok ? 0 : 1;
     if (resp && resp_cap) {
       if (n >= resp_cap) n = resp_cap - 1;
       resp[n] = '\0';

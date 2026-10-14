@@ -1,5 +1,7 @@
 # Guia de integração — EdgeHub Device SDK
 
+Quem integra o **umbrella** (`ehc_*`) deve começar em [`docs/README.md`](../../docs/README.md) (HTTP, HMAC, flags). Este guia é a API `eh_*` directa.
+
 ## 1. Dependências
 
 - Biblioteca estática `libedgehub_device.a` (ou `libedgehub_device_esp32s3.a`)

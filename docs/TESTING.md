@@ -1,5 +1,7 @@
 # Testes
 
+Índice: [README.md](README.md). Goldens HMAC: [HMAC.md](HMAC.md).
+
 Harness: Unity vendored em `tests/vendor/unity/` + CTest. Um executável por módulo.
 
 ```powershell
@@ -29,7 +31,9 @@ Cada teste passa o seu `ehc_user_t` (as tabelas **não** estão na `.a`).
 
 ## Device SDK
 
-Com `EHC_TEST_DEVICE_SDK=ON` (default) o `ctest` inclui os testes Unity de `device/` com prefixo `eh_` (`eh_test_values_writer`, HMAC dourado, check-in, telemetria, comandos, scheduling, ABI) para não colidir com os nomes do client.
+Com `EHC_TEST_DEVICE_SDK=ON` (default) o `ctest` inclui os testes Unity de `device/` com prefixo `eh_` (`eh_test_values_writer`, `eh_test_hmac_golden`, check-in, telemetria, comandos — `commandKey` null ainda despacha —, scheduling, ABI) para não colidir com os nomes do client. Hex dourados em [HMAC.md](HMAC.md).
+
+Não usar `scripts/sync_device_sdk.ps1` (deprecado; `device/` in-tree).
 
 ## Cobertura
 

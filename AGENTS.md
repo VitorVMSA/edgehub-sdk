@@ -4,7 +4,7 @@ Entrada única para agentes **neste git**. Leia isto antes de propor ou implemen
 
 **Contrato da biblioteca (HTTP, payloads, ports, runbooks):** [`docs/README.md`](docs/README.md) — este git. Quem clona o repo **não** precisa de Obsidian. Runtime Cursor (`AGENTS.md`, `.cursor/`) fica aqui. Memória de sessão: vault `90 - Agent Workspace/EdgeHub/Client SDK/`. Contrato público: `docs/`.
 
-Umbrella **0.3.2**: protocolo in-tree (`device/` = edgehub-device-sdk **1.2.6**, ABI 2) + camada de produto.
+Umbrella **0.3.3**: protocolo in-tree (`device/` = edgehub-device-sdk **1.2.6**, ABI 2) + camada de produto.
 
 | Área | Caminho | Docs |
 |------|---------|------|
@@ -25,7 +25,7 @@ Umbrella **0.3.2**: protocolo in-tree (`device/` = edgehub-device-sdk **1.2.6**,
 ```powershell
 .\scripts\test_host.ps1 -DeviceSdk
 # -DEHC_PORT=host|linux|embedded  (esp32 = examples/esp32_demo no IDF)
-.\scripts\package_release.ps1 -Version 0.3.2
+.\scripts\package_release.ps1 -Version 0.3.3
 ```
 
 ## Armadilhas (gotchas)

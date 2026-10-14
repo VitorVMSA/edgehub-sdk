@@ -1,81 +1,29 @@
 # EdgeHub Device SDK
 
-Biblioteca C compilada (caixa preta) para integração de dispositivos embarcados com a plataforma EdgeHub MDM/Telemetry.
+Biblioteca C (caixa preta) para MDM/Telemetry EdgeHub. Versão **1.2.6**, ABI **2**. Vive in-tree em `edgehub-client-sdk/device/`.
 
-Versão actual: **1.2.6** (ABI 2).
-
-## Conteúdo do release
-
-```
-include/edgehub_device.h     # API pública única
-lib/libedgehub_device.a      # Biblioteca estática (por target)
-cmake/edgehub_device.cmake   # Helper ESP-IDF add_prebuilt_library
-releases/v1.2.3/            # release_notes, SYNC, MANIFEST
-```
+**Docs:** [`docs/README.md`](../docs/README.md) · [`docs/PROTOCOL.md`](../docs/PROTOCOL.md) · [`device/docs/INTEGRATION.md`](docs/INTEGRATION.md).
 
 ## Integração mínima
 
 1. Alocar `eh_client_t` e preencher `eh_config_t`.
-2. Registar `eh_callbacks_t` (mínimo: `http_post`).
-3. Chamar `eh_lib_abi_check()` no boot.
-4. Loop: `eh_client_tick(&cli, now_ms)`.
-5. Telemetria: no callback `telemetry_collect`, usar `eh_values_begin` / `eh_values_add_*` / `eh_values_end`. Objectos aninhados: construir num writer de scratch e injectar com `eh_values_add_raw` (desde 1.2.0).
+2. Registar `eh_callbacks_t` (mínimo: `http_post` ou `http_post_ex`).
+3. `eh_lib_abi_check()` no boot.
+4. Loop: `eh_client_tick(&cli, now_ms)` com `now_ms` = epoch Unix.
+5. Telemetria: `eh_values_begin` / `eh_values_add_*` / `eh_values_end`.
 
-## Testes (host)
+Firmwares EcoCircuito usam a camada `ehc_*` do client, não este header sozinho.
 
-```powershell
-cmake -S . -B build/tests -DEH_BUILD_TESTS=ON
-cmake --build build/tests --config Release
-ctest --test-dir build/tests -C Release --output-on-failure
-```
-
-Ver [docs/INTEGRATION.md](docs/INTEGRATION.md).
-
-## Build (desenvolvedores SDK)
-
-### Host (CI / simulador)
+## Testes (host, a partir da raiz do umbrella)
 
 ```powershell
-.\scripts\build_host.ps1
-# dist/host/libedgehub_device.a
+.\scripts\test_host.ps1 -DeviceSdk
 ```
 
-### ESP32-S3
+Payloads ~4 KiB: compilar **fontes** com `-DEH_MAX_TELEMETRY_QUEUE=8` e `-DEH_MAX_TELEMETRY_QUEUE_VALUES=4096`. O `.a` default 768 não serve. `EH_MAX_BATCH_PAYLOAD` permanece 64 KiB.
 
-Requer ESP-IDF v5.x exportado:
+## Ed25519 RNG
 
-```powershell
-.\scripts\build_esp32s3.ps1
-# dist/esp32s3/libedgehub_device.a
-```
+Com `ED25519_CUSTOMRANDOM`, o integrador fornece `ed25519_randombytes_unsafe`. Host: `platform/ed25519_random_host.c`. MCU: `port/embedded/ed25519_random_embedded.c` (TRNG). Não ligar os dois.
 
-### Release tarball
-
-```powershell
-.\scripts\package_release.ps1 -Target esp32s3 -Version 1.0.0
-```
-
-## Plataforma: Ed25519 RNG
-
-Com `ED25519_CUSTOMRANDOM`, o integrador deve fornecer:
-
-```c
-void ed25519_randombytes_unsafe(void *p, size_t len);
-```
-
-- Host/simulador: incluído em `platform/ed25519_random_host.c` (build SDK).
-- ESP32: ver `examples/esp32_minimal/ed25519_random_esp32.c`.
-
-## Versão e ABI
-
-Header e `.a` devem ser da **mesma versão** (`EH_LIB_VERSION_*`). Use `eh_lib_abi_check()` para validar struct sizes.
-
-`EH_LIB_ABI_VERSION` é **2** desde 1.1.0 (`eh_config_t` ganhou `telemetry_batch_max` / `telemetry_queue_capacity` / `telemetry_queue_persist`; `eh_client_t` inclui a fila de leituras). Firmware tem de recompilar com o mesmo header. A assinatura de `http_post` não muda; `http_post_ex` continua opcional no fim de `eh_callbacks_t`. Fila `eh.tel.q` só persiste com `telemetry_queue_persist != 0`.
-
-O parser JSON da lib é `eh_json.c`. **Não** se compila `vendor/cjson` (1.2.1+) — evita colisão com o componente `cJson` do firmware ao ligar fontes.
-
-Payloads maiores que o default **768** bytes (`EH_MAX_TELEMETRY_QUEUE_VALUES`) exigem **compilar fontes** com `-D`, por exemplo `-DEH_MAX_TELEMETRY_QUEUE_VALUES=4096` e `-DEH_MAX_TELEMETRY_QUEUE=8` (~32 KiB de fila vs ~12 KiB). O `.a` pré-compilado com 768 **não** serve; alterar o define muda o tamanho de `eh_client_t`, por isso header e objectos têm de nascer no mesmo compile.
-
-## Licença
-
-Proprietária EdgeHub / EcoCircuito — ver LICENSE.
+Header e objectos da **mesma** versão (`eh_lib_abi_check()`). Parser JSON: `eh_json.c` (sem `vendor/cjson`).

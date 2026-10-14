@@ -84,6 +84,43 @@ static eh_status_t build_telemetry_url(eh_client_t *cli, char *url, size_t cap) 
   return EH_OK;
 }
 
+static const char *telemetry_http_error_category(int http_status, const char *response)
+{
+  const char *cursor;
+  char code[96];
+  char key[96];
+  char value[128];
+  int entry;
+  if (!response) {
+    return "unknown";
+  }
+  cursor = response;
+  while (*cursor == ' ' || *cursor == '\t' || *cursor == '\n' || *cursor == '\r') cursor++;
+  if (*cursor != '{') return "unknown";
+  cursor++;
+  code[0] = '\0';
+  while ((entry = eh_json_next_map_entry(&cursor, key, sizeof(key), value, sizeof(value))) > 0) {
+    if (strcmp(key, "code") == 0) {
+      snprintf(code, sizeof(code), "%s", value);
+      break;
+    }
+  }
+  if (entry < 0 || !code[0]) return "unknown";
+  if (http_status == 401 && (
+      strcmp(code, "DEVICE_CREDENTIAL_INVALID") == 0 ||
+      strcmp(code, "TELEMETRY_DEVICE_CREDENTIAL_EXPIRED") == 0 ||
+      strcmp(code, "TELEMETRY_DEVICE_CREDENTIAL_INVALID") == 0 ||
+      strcmp(code, "TELEMETRY_DEVICE_CREDENTIAL_REVOKED") == 0 ||
+      strcmp(code, "TELEMETRY_DEVICE_CREDENTIAL_REQUIRED") == 0 ||
+      strcmp(code, "TELEMETRY_DEVICE_SIGNATURE_REQUIRED") == 0)) {
+    return "credential";
+  }
+  if (strcmp(code, "TELEMETRY_INVALID_TS") == 0) {
+    return "validation";
+  }
+  return "unknown";
+}
+
 static eh_status_t build_values_json(eh_client_t *cli, char *out, size_t cap) {
   eh_values_writer_t writer;
   eh_status_t rc = eh_values_begin(&writer, out, cap);
@@ -233,10 +270,14 @@ eh_status_t eh_flush_telemetry(eh_client_t *cli) {
   uint32_t retry_after_sec = 0;
   eh_status_t rc;
   int http_ok;
+  int transport_failed = 0;
   uint8_t batch_max;
   uint8_t n;
   const eh_queued_reading_t *first;
   int rejected_index = -1;
+  const char *http_category;
+  const char *http_result;
+  char http_msg[128];
 
   if (!cli || (!cli->cb.http_post && !cli->cb.http_post_ex)) return EH_ERR_INVALID_ARG;
   if (!cli->cfg.enable_telemetry) return EH_OK;
@@ -288,13 +329,26 @@ eh_status_t eh_flush_telemetry(eh_client_t *cli) {
 
   http_ok = eh_client_http_post_hmac(
     cli, url, canonical, 1, (const uint8_t *)body, body_len,
-    resp, sizeof(resp), &resp_len, &http_status, &retry_after_sec
+    resp, sizeof(resp), &resp_len, &http_status, &retry_after_sec, &transport_failed
   );
   if (resp_len >= sizeof(resp)) resp_len = sizeof(resp) - 1;
   resp[resp_len] = '\0';
 
   if (!http_ok || http_status < 200 || http_status > 299) {
     eh_client_note_http_retry(cli, http_status, retry_after_sec);
+    http_result = http_ok ? "http_rejection" :
+      (transport_failed ? "transport_failure" : "request_failure");
+    if (!http_ok && transport_failed) {
+      http_category = "unknown";
+    } else if (!http_ok) {
+      http_category = "unknown";
+    } else {
+      http_category = telemetry_http_error_category(http_status, (const char *)resp);
+    }
+    snprintf(http_msg, sizeof(http_msg),
+      "telemetry_http result=%s http_status=%d category=%s",
+      http_result, http_status, http_category);
+    eh_logf(cli, EH_LOG_WARN, http_msg);
     if (eh_telemetry_response_requires_credential_reprovision(http_status, (const char *)resp)) {
       cli->needs_credential_reprovision = 1;
       eh_logf(cli, EH_LOG_WARN, "telemetry_credential_reprovision_required");
@@ -310,7 +364,9 @@ eh_status_t eh_flush_telemetry(eh_client_t *cli) {
 
   eh_telemetry_queue_drop_front(cli, n);
   eh_parse_pending_commands(cli, (const char *)resp);
-  eh_logf(cli, EH_LOG_INFO, "telemetry_ok");
+  snprintf(http_msg, sizeof(http_msg),
+    "telemetry_http result=accepted http_status=%d category=none", http_status);
+  eh_logf(cli, EH_LOG_INFO, http_msg);
   rc = EH_OK;
 
 done:
@@ -377,7 +433,7 @@ eh_status_t eh_poll_downlink(eh_client_t *cli, uint64_t now_ms) {
   }
   http_ok = eh_client_http_post_hmac(
     cli, url, canonical, 1, (const uint8_t *)body, body_len,
-    resp, EH_POLL_RESP, &resp_len, &http_status, &retry_after_sec
+    resp, EH_POLL_RESP, &resp_len, &http_status, &retry_after_sec, NULL
   );
   if (resp_len >= EH_POLL_RESP) resp_len = EH_POLL_RESP - 1;
   resp[resp_len] = '\0';

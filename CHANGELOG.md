@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.3 — 2026-10-14
+
+- API aditiva `ehc_set_log_level()` para configurar ERROR/WARN/INFO/DEBUG em runtime; default INFO preservado e ABI do device inalterada.
+- Eventos seguros `telemetry_enqueue`, `telemetry_flush` e `telemetry_http` distinguem status do client, fila, transporte, HTTP e códigos reconhecidos de credencial/validação sem registrar payload ou segredo.
+- Documentado diagnóstico seguro em ambiente de teste, limites de evidência de aceitação e responsabilidade da aplicação por persistência/replay.
+
 ## 0.3.2 — 2026-09-13
 
 - `ehc_poll_downlink()`: poll imediato de `pendingCommands` (além do intervalo em `ehc_tick`). `ehc_poll_commands_enabled()`.
@@ -19,7 +25,7 @@
 - Comandos: downlink só em `pendingCommands` da telemetria; `executed` já existia. Opt-in `poll_commands` (slave) faz POST `{values:{}}` no mesmo ingest. HMAC: um retry com `secret_previous` em 401 INVALID; `expiresAt` arma reprovision. PKCS#8 auto-liga credential/issue. Wrappers `ehc_set_checkin_interval` / `ehc_set_telemetry_batch_max` / `ehc_set_telemetry_interval` / `ehc_get_device_status`. Check-in: checksum/source opcionais no offer.
 - CMake: `EHC_DEVICE_SDK_ROOT` default `${repo}/device`; `EHC_TEST_DEVICE_SDK` default ON. `scripts/sync_device_sdk.ps1` deprecado.
 - `EHC_PORT=host|linux|embedded|esp32`; template `port/embedded/` + `examples/embedded_stub` para MCU sem IDF.
-- Colaboração com agentes: `AI-WORKFLOW.md`, `memory-bank/` (contexto + histórico), playbook em `docs/cursor-agents-playbook.md`.
+- Colaboração com agentes: `AI-WORKFLOW.md`, memória de sessão pessoal no vault, playbook em `docs/cursor-agents-playbook.md`.
 
 ## 0.2.3 — 2026-09-11
 
@@ -37,7 +43,7 @@
 ## 0.2.1 — 2026-08-19
 
 - `ehc_tel_reset()`: cache `filled=0` e pool de strings vazio (campos condicionais não contaminam a leitura seguinte). Getters intactos. Sem auto-reset no `enqueue`.
-- `ehc_tel_queue_clear()`: esvazia a fila RAM após falha de flush (o store da aplicação reenvia os mesmos `rec_id`).
+- `ehc_tel_queue_clear()`: esvazia explicitamente a fila RAM. A API não expõe o `rejectedIndex` nem permite mapear remoções a `rec_id` individuais.
 - Fila do client **só em RAM**: `telemetry_queue_persist = 0` no init; o bridge ignora `eh.tel.q`. HMAC (`ehc.hmac.secret`) e assets (`ehc.asset.*`) continuam no port.
 - Requer **edgehub-device-sdk ≥ 1.2.2**. `ehc_tel_flush` continua a devolver só `ehc_status_t`.
 
