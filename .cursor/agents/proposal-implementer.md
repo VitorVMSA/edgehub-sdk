@@ -15,7 +15,7 @@ description: >-
 
 ## Antes de codificar
 
-1. Ler `AGENTS.md`, rules e `memory-bank/active-context.md`.
+1. Ler `AGENTS.md`, rules e memória de sessão no vault `90 - Agent Workspace/EdgeHub/Client SDK/`, se disponível.
 2. Confirmar **aprovação explícita** — se não houver, parar e pedir.
 
 ## Durante a implementação
@@ -29,9 +29,10 @@ description: >-
 
 1. Resumir alterações por ficheiro.
 2. Como validar: `.\scripts\test_host.ps1 -DeviceSdk`.
-3. Atualizar `memory-bank/` (active-context, progress; lessons se houver).
-4. Skills/rules se a aprendizagem for reutilizável (`skill-evolution`).
-5. **Não criar commit** salvo pedido explícito.
+3. Atualizar memória de sessão no vault (active-context, progress; lessons se houver), se disponível.
+4. Se o contrato HTTP/ABI/port mudou: actualizar `docs/` neste git.
+5. Skills/rules se a aprendizagem for reutilizável (`skill-evolution`).
+6. **Não criar commit** salvo pedido explícito.
 
 ## Tom e idioma
 

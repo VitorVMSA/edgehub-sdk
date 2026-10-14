@@ -72,8 +72,8 @@ Segue docs/PORTING.md e a rule ehc-ports. Não dupliques src/ nem device/.
 @memory-bank
 
 Tarefa concluída: <<< resumo >>>
-Atualiza memory-bank/active-context.md, progress.md e lessons-learned.md
-se aplicável. Não dupliques AGENTS.md.
+Atualiza a memória de sessão no vault 90 - Agent Workspace/EdgeHub/Client SDK
+(active-context.md, progress.md e lessons.md, se aplicável). Não dupliques AGENTS.md nem docs/.
 ```
 
 ---

@@ -1,7 +1,7 @@
 ---
 name: memory-bank
 description: >-
-  Como ler e atualizar a memória persistente entre sessões (memory-bank/).
+  Como ler e atualizar a memória persistente de sessão no vault pessoal do EdgeHub Client SDK.
   Usar no início de tarefas multi-ficheiro, continuação de trabalho anterior,
   ou ao fechar feature/correção relevante.
 ---
@@ -12,10 +12,10 @@ description: >-
 
 | Ficheiro | Conteúdo | Atualizar quando |
 |----------|----------|------------------|
-| `memory-bank/active-context.md` | Foco, WIP, decisões, histórico recente da sessão | Mudança de foco ou entrega parcial |
-| `memory-bank/progress.md` | O que funciona, issues, linha de versões | Testes host ou fecho de feature |
-| `memory-bank/lessons-learned.md` | Causa-raiz + fix | Bug não trivial, nova armadilha |
-| `memory-bank/system-patterns.md` | Arquitetura resumida | Mudança de layout/ports/ABI |
+| `90 - Agent Workspace/EdgeHub/Client SDK/active-context.md` | Foco, WIP, decisões, histórico recente da sessão | Mudança de foco ou entrega parcial |
+| `90 - Agent Workspace/EdgeHub/Client SDK/progress.md` | O que funciona, issues, linha de versões | Testes host ou fecho de feature |
+| `90 - Agent Workspace/EdgeHub/Client SDK/lessons.md` | Causa-raiz + fix | Bug não trivial, nova armadilha |
+| `90 - Agent Workspace/EdgeHub/Client SDK/system-patterns.md` | Arquitetura resumida | Mudança de layout/ports/ABI |
 
 ## Quando LER (obrigatório)
 
@@ -29,7 +29,7 @@ description: >-
 - Descoberta de armadilha (CTest names, HTTP 401, `disable_*`, ABI)
 - Decisão de arquitetura que afeta vários caminhos
 
-## Formato `lessons-learned.md`
+## Formato `lessons.md`
 
 ```markdown
 ### YYYY-MM | Área | Título curto
@@ -41,6 +41,7 @@ description: >-
 ## Regras
 
 - Não duplicar `AGENTS.md` — memória é estado dinâmico e histórico de sessão.
+- Não duplicar `docs/` (contrato da biblioteca) na memória de sessão.
 - Entradas curtas e acionáveis.
 - Manter `active-context.md` enxuto (últimas 2–4 semanas de foco).
 - Fluxo completo: `AI-WORKFLOW.md`.

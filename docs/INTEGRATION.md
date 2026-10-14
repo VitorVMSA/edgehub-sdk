@@ -77,9 +77,9 @@ Em DEBUG, os eventos `telemetry_enqueue` e `telemetry_flush` do client incluem e
 
 Para coletar em ambiente de teste, use um dispositivo de bancada e um callback de log que encaminhe mensagens para o console/serial do port. Ative DEBUG temporariamente, reproduza um enqueue e flush, e recolha o intervalo desde `telemetry_enqueue` até `telemetry_http`/`telemetry_flush`. Os eventos não imprimem URL, headers, corpo, valores de métricas ou credenciais. Não adicione dumps de request/response ao callback.
 
-`ehc_tel_flush()` continua a devolver apenas `ehc_status_t`: HTTP/transporte falho chega ao client como `EHC_EIO`. Para medir remoção, compare `ehc_tel_queued()` antes e depois. HTTP 2xx acompanhado da redução esperada da fila é a evidência disponível de confirmação/aceitação para esse batch no contrato atual; não prova persistência/processamento posterior. Observe também `queue_after`: `rejectedIndex` numa resposta de erro pode remover uma leitura mesmo quando o flush falha. Não confirme o armazenamento persistente da aplicação apenas com `EHC_OK`.
+`ehc_tel_flush()` continua a devolver apenas `ehc_status_t`: HTTP/transporte falho chega ao client como `EHC_EIO`. Para medir remoção, compare `ehc_tel_queued()` antes e depois. HTTP 2xx indica sucesso da requisição e o device SDK remove do RAM os itens enviados. A contagem da fila não identifica os `rec_id` correspondentes, e em falha `rejectedIndex` pode remover uma leitura sem que a API pública revele qual. Portanto, HTTP 2xx + redução da fila não é ACK persistente por registro. A aplicação deve manter replay/ACK sob sua responsabilidade e definir uma política de duplicidade apropriada. `EHC_OK` sozinho também não confirma envio: antes de ACTIVE, o flush pode retornar OK mantendo a fila.
 
-A fila do SDK é RAM. Persistência, replay e ACK do armazenamento pertencem à aplicação consumidora. Se a fila RAM saturar, a política já existente pode descartar a leitura mais antiga (`telemetry_queue_full_drop_oldest`); isso é saturação local, não rejeição remota. Preserve no storage da aplicação os registos que ainda não foram confirmados segundo o contrato do produto.
+A fila do SDK é RAM. Persistência, replay e ACK do armazenamento pertencem à aplicação consumidora. Quando a fila RAM atinge a capacidade, a política existente remove a leitura mais antiga e aceita a nova (`telemetry_queue_full_drop_oldest`). Isso é saturação local, não rejeição remota.
 
 ## 3. Telemetria
 
@@ -116,11 +116,11 @@ before = ehc_tel_queued();
 rc = ehc_tel_flush(); /* um POST readings[] se batch_max > 1 */
 sent = (uint8_t)(before - ehc_tel_queued());
 if (rc != EHC_OK) {
-  ehc_tel_queue_clear(); /* store reenvia os rec_id; não ack sent */
+  /* Não dê ACK persistente; a API não identifica o rec_id rejeitado. */
 }
 ```
 
-`ehc_tel_flush` devolve só `ehc_status_t`. Contagem: `sent = queued_antes - queued_depois` **só** no caminho OK. Em falha HTTP a fila RAM fica; `rejectedIndex` num 401 pode tirar uma leitura do meio — sem `queue_clear` o store duplica `rec_id`. `ehc_tick()` **não** envia telemetria quando `telemetry_manual_only=1`. `ehc_tel_queued()` devolve o tamanho da fila.
+`ehc_tel_flush` devolve só `ehc_status_t`. `sent = queued_antes - queued_depois` é uma contagem de remoções da fila RAM. Em 2xx, o device SDK remove os itens enviados; em falha HTTP, `rejectedIndex` pode remover um item, mas a API pública não expõe seu índice nem identifica os `rec_id`. Assim, a aplicação não consegue garantir ACK persistente individual apenas com estas funções. Não use `ehc_tel_queue_clear()` como tratamento genérico. Saturação da fila RAM é local, não rejeição remota. `ehc_tick()` **não** envia telemetria quando `telemetry_manual_only=1`.
 
 Números no `values` / `readings[]` seguem `JSON.stringify` (device 1.2.5). O servidor HMAC-a `JSON.stringify` do body parseado; `%.15g` (`1e-05`) falha o ingest com 401 `TELEMETRY_DEVICE_CREDENTIAL_INVALID` mesmo com o segredo válido. Não imprimir métricas à mão — `ehc_tel_set_num` / `eh_values_add_num`.
 
@@ -180,7 +180,7 @@ for (;;) {
 }
 ```
 
-`now_ms` vem do port. Replay histórico chama `ehc_tel_reset` / `ehc_tel_enqueue` / `ehc_tel_flush` (e `ehc_tel_queue_clear` se o flush falhar) no próprio loop; o tick fica para check-in e comandos.
+`now_ms` vem do port. Replay histórico chama `ehc_tel_reset` / `ehc_tel_enqueue` / `ehc_tel_flush` no próprio loop; o tick fica para check-in e comandos. Não use `ehc_tel_queue_clear` automaticamente em falha: `rejectedIndex` pode remover uma leitura sem identificar seu `rec_id` na API pública.
 
 Wrappers runtime (lock + `eh_client_init` se ainda não houver). **Não** chamar de `on_config_apply`:
 

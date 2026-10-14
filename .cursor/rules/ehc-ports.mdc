@@ -18,4 +18,4 @@ Loop da aplicação: `ehc_init(&port, &user);` + `ehc_tick()`. Slave: `disable_t
 
 `now_ms` de ingest no ESP32 = epoch Unix (`gettimeofday` no `port/esp32`). `esp_timer` sozinho produz `TELEMETRY_INVALID_TS`.
 
-Novo MCU: copiar `port/embedded/` + `ed25519_random_embedded.c` (em vez de `device/platform/ed25519_random_host.c`). Ver skill `ehc-porting` e `docs/PORTING.md`.
+Novo MCU: copiar `port/embedded/` + `ed25519_random_embedded.c` (em vez de `device/platform/ed25519_random_host.c`). Ver skill `ehc-porting` e [docs/PORTING.md](../../docs/PORTING.md).

@@ -9,7 +9,7 @@ alwaysApply: true
 2. **Aprovação explícita** no chat.
 3. **Implementação** — escopo mínimo; rules por glob / alwaysApply.
 4. **Revisão** — `sdk-review` se ABI, ports, flags ou HTTP.
-5. **Memória** — atualizar `memory-bank/` ao concluir trabalho relevante (`AI-WORKFLOW.md`).
+5. **Memória** — atualizar memória de sessão no vault pessoal ao concluir trabalho relevante (`AI-WORKFLOW.md` / `AGENTS.md`).
 
 ## Commits
 
@@ -21,8 +21,8 @@ alwaysApply: true
 
 ## Playbook
 
-Prompts: `docs/cursor-agents-playbook.md`.
+Prompts: [`docs/cursor-agents-playbook.md`](../../docs/cursor-agents-playbook.md).
 
 ## Memória
 
-Ler `memory-bank/active-context.md` no início de trabalho não trivial. Skill `memory-bank`.
+Ler e atualizar a memória de sessão no vault `90 - Agent Workspace/EdgeHub/Client SDK/`, se disponível. Skill `memory-bank`.

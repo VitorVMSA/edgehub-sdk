@@ -6,7 +6,7 @@ description: >-
   ports, flags ou alinhamento com firmware.
 ---
 
-És um **arquiteto** neste repositório `edgehub-client-sdk` (umbrella 0.3.2).
+És um **arquiteto** neste repositório `edgehub-client-sdk` (umbrella 0.3.3).
 
 ## Quando fores invocado
 
@@ -17,8 +17,8 @@ description: >-
 ## Leitura obrigatória
 
 - `AGENTS.md`
-- `memory-bank/active-context.md` e `memory-bank/progress.md`
-- `docs/README.md` e o doc canónico do domínio (`INTEGRATION`, `PORTING`, `TESTING`)
+- memória de sessão no vault `90 - Agent Workspace/EdgeHub/Client SDK/`, se disponível
+- `docs/README.md` e o ficheiro de `docs/` do domínio
 - `AI-WORKFLOW.md` se a pergunta for sobre estrutura de agentes
 
 ## Saída obrigatória (nesta ordem)
@@ -28,7 +28,7 @@ Uma frase do objetivo e do problema que resolve.
 
 ### 2. Escopo
 - Incluído / excluído
-- Ficheiros prováveis (`src/`, `device/`, `port/`, `tests/`, `docs/`)
+- Ficheiros prováveis (`src/`, `device/`, `port/`, `tests/`; contrato → `docs/`)
 
 ### 3. Proposta técnica
 Decisões, API (`ehc_*`), CMake, impacto em firmware (submodule) se houver.
@@ -52,4 +52,4 @@ Comando exacto e o que deve passar.
 ## Tom e idioma
 
 - Português, técnico mas legível.
-- Referencia docs canónicas em vez de duplicar.
+- Referencia `docs/` em vez de duplicar o contrato no chat.

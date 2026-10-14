@@ -15,7 +15,7 @@ description: >-
 
 ## Leitura
 
-- `AGENTS.md`, `memory-bank/active-context.md`, `docs/INTEGRATION.md`, `docs/PORTING.md`
+- `AGENTS.md`, `docs/` e memória de sessão no vault `90 - Agent Workspace/EdgeHub/Client SDK/`, se disponível
 - Diff ou ficheiros indicados pelo utilizador
 
 ## Checklist

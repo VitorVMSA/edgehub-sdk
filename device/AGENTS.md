@@ -9,8 +9,8 @@ Entrada para agentes neste repositório. Lib C (ABI 2) para MDM/Telemetry EdgeHu
 | Fontes | `src/` + `src/internal/` |
 | Release | `releases/v1.2.3/` (`release_notes_123.txt`, `SYNC.txt`, `MANIFEST.txt`) |
 | Changelog | `CHANGELOG.md` |
-| Integração | `docs/INTEGRATION.md` |
-| Firmware EcoCircuito | irmão `../ecocircuito-maq_v3.0_refatorado` — `scripts/sync_edgehub_sources.ps1` |
+| Documentação de integração | `../docs/` no umbrella (PROTOCOL, HMAC, INTEGRATION) |
+| Firmware EcoCircuito | irmão `../ecocircuito-maq_v3.0_refatorado`
 
 ## Comandos
 
